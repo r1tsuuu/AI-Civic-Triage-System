@@ -2,6 +2,7 @@ import hmac
 import hashlib
 import json
 import logging
+import threading
 
 from django.conf import settings
 from django.http import HttpResponse
@@ -36,8 +37,8 @@ def webhook_receive(request):
     """
     POST /webhook/facebook/
     Receives incoming Facebook posts. Validates HMAC-SHA256 signature,
-    saves new RawPost records, returns 200 immediately.
-    NLP processing happens separately (TASK-013).
+    saves new RawPost records, spawns background thread for NLP processing,
+    returns HTTP 200 immediately — never blocks on NLP work.
     """
     # --- Signature validation ---
     signature_header = request.META.get("HTTP_X_HUB_SIGNATURE_256", "")
@@ -51,7 +52,7 @@ def webhook_receive(request):
         logger.warning("Webhook received invalid JSON payload")
         return HttpResponse("Bad Request", status=400)
 
-    # --- Extract and save posts ---
+    # --- Extract and save posts, then trigger async processing ---
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
@@ -61,13 +62,37 @@ def webhook_receive(request):
             if not post_id:
                 continue
 
-            # Only create if not already seen — duplicate delivery is ignored
-            RawPost.objects.get_or_create(
+            raw_post, created = RawPost.objects.get_or_create(
                 facebook_post_id=post_id,
                 defaults={"post_text": message},
             )
 
+            # Only trigger pipeline for newly created posts
+            if created:
+                _trigger_pipeline(raw_post)
+
+    # HTTP 200 is sent before any NLP thread does any work
     return HttpResponse("OK", status=200)
+
+
+def _trigger_pipeline(raw_post: RawPost) -> None:
+    """
+    Spawn a background thread to run the NLP pipeline.
+    Imported lazily to avoid circular dependencies.
+    The HTTP response is always sent before this thread starts work.
+    """
+    def run():
+        try:
+            # Lazy import — pipeline depends on triage models not yet migrated
+            from apps.triage.pipeline import process_post
+            process_post(raw_post)
+        except Exception:
+            logger.exception(
+                "Pipeline failed for RawPost %s", raw_post.facebook_post_id
+            )
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
 
 
 def _verify_signature(body: bytes, signature_header: str) -> bool:
