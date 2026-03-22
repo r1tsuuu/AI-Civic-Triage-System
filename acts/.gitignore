@@ -1,0 +1,26 @@
+# Secrets — NEVER commit
+.env
+
+# Machine learning model binaries — too large, rebuilt from training scripts
+ml/models/
+
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
+
+# Local SQLite fallback database
+db.sqlite3
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Collected static (generated at deploy time)
+staticfiles/
+
+# Coverage reports
+.coverage
+htmlcov/
