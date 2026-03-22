@@ -1,14 +1,11 @@
 from django.urls import path
+from . import gate_views
 
 app_name = "dashboard"
 
 urlpatterns = [
-    # TASK-031: GET  /dashboard/           (stats overview)
-    # TASK-032: GET  /dashboard/reports/   (list view)
-    # TASK-033: GET  /dashboard/reports/<id>/  (detail view)
-    # TASK-034: GET  /dashboard/history/   (audit log)
-    # TASK-040: POST /dashboard/reports/<id>/acknowledge|in-progress|resolve|dismiss/
-    # TASK-041: POST /dashboard/reports/<id>/override/
-    # TASK-070: GET  /dashboard/reports/map/
-    # Views will be wired here in Phase 3+
+    # TASK-001: logout clears demo session flag
+    path("logout/", gate_views.gate_logout, name="logout"),
+
+    # TASK-031–034, TASK-040–041, TASK-070: wired in Phase 3+
 ]

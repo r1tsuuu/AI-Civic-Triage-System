@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACTS — Demo Access</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f0f4f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .gate-card {
+      width: 100%;
+      max-width: 400px;
+    }
+    .brand-bar {
+      background-color: #1A56DB;
+      height: 6px;
+      border-radius: 4px 4px 0 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="gate-card">
+    <div class="brand-bar"></div>
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <h4 class="fw-bold text-dark mb-1">ACTS Demo</h4>
+          <p class="text-muted small">AI-powered Civic Triage System</p>
+        </div>
+
+        {% if error %}
+          <div class="alert alert-danger py-2 small">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/gate/">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="password" class="form-label small fw-semibold text-secondary">
+              DEMO PASSWORD
+            </label>
+            <input
+              type="password"
+              name="password"
+              id="password"
+              class="form-control"
+              placeholder="Enter demo password"
+              autofocus
+              required
+            >
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary" style="background-color:#1A56DB; border-color:#1A56DB;">
+              Enter Dashboard
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <p class="text-center text-muted mt-3" style="font-size: 0.75rem;">
+      Team CodeBlooded &mdash; EXPE21ENCE YSES: The HackFest
+    </p>
+  </div>
+</body>
+</html>
