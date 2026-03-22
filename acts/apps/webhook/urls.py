@@ -1,9 +1,8 @@
 from django.urls import path
+from . import views
 
 app_name = "webhook"
 
 urlpatterns = [
-    # TASK-011: GET  /webhook/facebook/  (Meta hub.challenge verification)
-    # TASK-012: POST /webhook/facebook/  (incoming post receiver)
-    # Views will be wired here in Phase 1
+    path("facebook/", views.webhook_verify, name="facebook"),
 ]
