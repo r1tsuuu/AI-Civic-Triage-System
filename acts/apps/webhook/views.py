@@ -2,10 +2,9 @@ import hmac
 import hashlib
 import json
 import logging
-import threading
 
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -29,3 +28,58 @@ def webhook_verify(request):
         return HttpResponse(challenge, status=200, content_type="text/plain")
 
     return HttpResponse("Forbidden", status=403)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def webhook_receive(request):
+    """
+    POST /webhook/facebook/
+    Receives incoming Facebook posts. Validates HMAC-SHA256 signature,
+    saves new RawPost records, returns 200 immediately.
+    NLP processing happens separately (TASK-013).
+    """
+    # --- Signature validation ---
+    signature_header = request.META.get("HTTP_X_HUB_SIGNATURE_256", "")
+    if not _verify_signature(request.body, signature_header):
+        return HttpResponse("Forbidden", status=403)
+
+    # --- Parse payload ---
+    try:
+        payload = json.loads(request.body)
+    except json.JSONDecodeError:
+        logger.warning("Webhook received invalid JSON payload")
+        return HttpResponse("Bad Request", status=400)
+
+    # --- Extract and save posts ---
+    for entry in payload.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            post_id = value.get("post_id") or entry.get("id")
+            message = value.get("message", "")
+
+            if not post_id:
+                continue
+
+            # Only create if not already seen — duplicate delivery is ignored
+            RawPost.objects.get_or_create(
+                facebook_post_id=post_id,
+                defaults={"post_text": message},
+            )
+
+    return HttpResponse("OK", status=200)
+
+
+def _verify_signature(body: bytes, signature_header: str) -> bool:
+    """
+    Validate X-Hub-Signature-256 header using HMAC-SHA256.
+    Returns False if header is missing, malformed, or doesn't match.
+    """
+    if not signature_header.startswith("sha256="):
+        return False
+
+    expected = signature_header[len("sha256="):]
+    secret = settings.META_APP_SECRET.encode("utf-8")
+
+    computed = hmac.new(secret, body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(computed, expected)
