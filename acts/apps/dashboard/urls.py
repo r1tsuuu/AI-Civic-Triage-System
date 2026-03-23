@@ -24,6 +24,12 @@ urlpatterns = [
     # TASK-040: Map view
     path("map/", views.MapView.as_view(), name="map"),
 
+    # TASK-040: Status action endpoints
+    path("reports/<uuid:pk>/acknowledge/", views.AcknowledgeReportView.as_view(), name="report-acknowledge"),
+    path("reports/<uuid:pk>/in-progress/", views.InProgressReportView.as_view(), name="report-in-progress"),
+    path("reports/<uuid:pk>/resolve/", views.ResolveReportView.as_view(), name="report-resolve"),
+    path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="report-dismiss"),
+
     # TASK-041: API endpoints for map data
     path("api/reports/geojson/", views.ReportsGeoJSONView.as_view(), name="reports-geojson"),
 ]

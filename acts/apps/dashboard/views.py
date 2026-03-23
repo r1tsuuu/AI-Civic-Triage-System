@@ -6,13 +6,30 @@ This module contains all dashboard views for the ACTS demo interface.
 Assigned to SWE-2 for implementation in TASK-031 through TASK-041.
 """
 
+from __future__ import annotations
+from typing import ClassVar, TypedDict
+
 from django.views.generic import TemplateView, ListView, DetailView, View
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
 from apps.webhook.models import RawPost
+from apps.triage.exceptions import InvalidTransitionError
 from django.db.models import Count, Q
 from datetime import timedelta, datetime
 from django.core.paginator import Paginator
+
+
+class StatusChangeDict(TypedDict):
+    """Shape of each mock status-change entry in HistoryView / HistoryExportView."""
+    id: str
+    report_id: object          
+    timestamp: datetime
+    from_status: str
+    to_status: str
+    notes: str
+    changed_by: str
 
 
 class StatsView(TemplateView):
@@ -137,7 +154,7 @@ class ReportListView(ListView):
         for report in context['reports']:
             # Add mock classification data
             report.urgency_score = random.randint(1, 100)
-            report.confidence = round(random.uniform(0.5, 1.0), 2)
+            report.confidence = float(round(random.uniform(0.5, 1.0), 2))
             report.category = random.choice(categories)
             report.status = random.choice(statuses)
             report.barangay = random.choice(barangays)
@@ -215,7 +232,7 @@ class ReportDetailView(DetailView):
         # Add mock classification data
         import random
         report.urgency_score = random.randint(1, 100)
-        report.confidence = round(random.uniform(0.5, 1.0), 2)
+        report.confidence = float(round(random.uniform(0.5, 1.0), 2))
         report.category = random.choice(['disaster', 'transport', 'infrastructure', 'safety', 'other'])
         report.barangay = random.choice(['Cabanatuan', 'San Fernando', 'Talugtug', 'General Nakar', 
                                         'Amadeo', 'Imus', 'Tagaytay', 'Cavite City', 'Noveleta', 'Bacoor'])
@@ -227,57 +244,42 @@ class ReportDetailView(DetailView):
         
         # Mock location coordinates (some reports have them, some don't)
         if random.random() > 0.3:  # 70% have coordinates
-            report.latitude = round(random.uniform(14.5, 15.5), 4)
-            report.longitude = round(random.uniform(120.5, 121.5), 4)
+            report.latitude = float(round(random.uniform(14.5, 15.5), 4))
+            report.longitude = float(round(random.uniform(120.5, 121.5), 4))
         else:
             report.latitude = None
             report.longitude = None
         
-        # Mock status change history
-        now = timezone.now()
-        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
-        status_changes = []
-        current_status = 'reported'
-        
-        for i, status in enumerate(statuses[:random.randint(2, 4)]):
-            status_changes.append({
-                'id': i,
-                'from_status': statuses[i-1] if i > 0 else None,
-                'to_status': status,
-                'timestamp': now - timedelta(hours=i*4),
-                'notes': f'Status changed to {status}',
-                'changed_by': 'System',
-            })
-            current_status = status
-        
-        # Sort by timestamp descending (newest first for display)
-        status_changes.sort(key=lambda x: x['timestamp'], reverse=True)
-        context['status_changes'] = status_changes
-        report.current_status = current_status
-        
+        # Real status from DB field
+        report.current_status = report.status
+
+        # Status history: empty list for now (StatusChange model pending)
+        context['status_changes'] = []
+
         # Mock auto-reply
+        now = timezone.now()
         context['auto_reply'] = {
             'id': 'ar_001',
             'message': 'Thank you for reporting this incident. Our team is investigating and will provide updates soon.',
             'sent_at': now - timedelta(hours=0.5),
             'status': 'sent',
         }
-        
-        # Available actions based on current status
-        status_transitions = {
-            'reported': ['acknowledged'],
-            'acknowledged': ['in-progress'],
-            'in-progress': ['resolved'],
-            'resolved': [],
-        }
-        context['available_next_statuses'] = status_transitions.get(current_status, [])
-        
-        # All possible status options for dropdown
-        context['all_statuses'] = ['reported', 'acknowledged', 'in-progress', 'resolved']
-        
+
+        # Available actions derived from VALID_TRANSITIONS on the real status
+        next_statuses = RawPost.VALID_TRANSITIONS.get(report.status, [])
+        context['available_next_statuses'] = next_statuses
+
+        # All possible status options for display
+        context['all_statuses'] = [
+            RawPost.STATUS_REPORTED,
+            RawPost.STATUS_ACKNOWLEDGED,
+            RawPost.STATUS_IN_PROGRESS,
+            RawPost.STATUS_RESOLVED,
+        ]
+
         # Category options
         context['category_options'] = ['disaster', 'transport', 'infrastructure', 'safety', 'other']
-        
+
         # Signal breakdown for urgency visualization
         context['signal_breakdown'] = {
             'keyword_score': random.randint(10, 100),
@@ -285,7 +287,7 @@ class ReportDetailView(DetailView):
             'time_score': random.randint(10, 100),
             'consistency_score': random.randint(10, 100),
         }
-        
+
         return context
 
 
@@ -316,23 +318,23 @@ class HistoryView(ListView):
         all_reports = RawPost.objects.all()
         
         # Generate mock status changes for each report
-        all_changes = []
-        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        all_changes: list[StatusChangeDict] = []
+        statuses: list[str] = ['reported', 'acknowledged', 'in-progress', 'resolved']
         
         for report in all_reports:
             now = timezone.now()
             num_transitions = random.randint(2, 4)
             
             for i in range(num_transitions):
-                all_changes.append({
-                    'id': f"{report.id}_{i}",
-                    'report_id': report.id,
-                    'timestamp': now - timedelta(hours=random.randint(1, 72)),
-                    'from_status': statuses[i-1] if i > 0 else 'reported',
-                    'to_status': statuses[i],
-                    'notes': f'Status changed to {statuses[i]}',
-                    'changed_by': random.choice(['System', 'Moderator', 'Auto']),
-                })
+                all_changes.append(StatusChangeDict(
+                    id=f"{report.id}_{i}",
+                    report_id=report.id,
+                    timestamp=now - timedelta(hours=random.randint(1, 72)),
+                    from_status=statuses[i - 1] if i > 0 else 'reported',
+                    to_status=statuses[i],
+                    notes=f'Status changed to {statuses[i]}',
+                    changed_by=random.choice(['System', 'Moderator', 'Auto']),
+                ))
         
         # Sort by timestamp descending
         all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
@@ -413,16 +415,19 @@ class HistoryExportView(View):
         for report in all_reports:
             now = timezone.now()
             num_transitions = random.randint(2, 4)
-            
+            all_changes_export: list[StatusChangeDict] = []
+
             for i in range(num_transitions):
-                all_changes.append({
-                    'report_id': report.id,
-                    'timestamp': now - timedelta(hours=random.randint(1, 72)),
-                    'from_status': statuses[i-1] if i > 0 else 'reported',
-                    'to_status': statuses[i],
-                    'notes': f'Status changed to {statuses[i]}',
-                    'changed_by': random.choice(['System', 'Moderator', 'Auto']),
-                })
+                all_changes_export.append(StatusChangeDict(
+                    id=f"{report.id}_{i}",
+                    report_id=report.id,
+                    timestamp=now - timedelta(hours=random.randint(1, 72)),
+                    from_status=statuses_export[i - 1] if i > 0 else 'reported',
+                    to_status=statuses_export[i],
+                    notes=f'Status changed to {statuses_export[i]}',
+                    changed_by=random.choice(['System', 'Moderator', 'Auto']),
+                ))
+            all_changes += all_changes_export
         
         # Sort by timestamp descending
         all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
@@ -502,3 +507,51 @@ class ReportsGeoJSONView(View):
         }
         return JsonResponse(geojson)
 
+
+# ---------------------------------------------------------------------------
+# TASK-040: Status action views
+# ---------------------------------------------------------------------------
+
+class _BaseStatusActionView(View):
+    """
+    Base class for all status-transition POST views.
+
+    Subclasses set:
+        target_status  – the RawPost STATUS_* constant to transition to
+        url_name       – name for this action (used in 405 error text)
+    """
+    target_status: ClassVar[str]  # set by each concrete subclass
+    http_method_names = ['post']  # GET → 405 automatically
+
+    def post(self, request, pk):
+        report = get_object_or_404(RawPost, pk=pk)
+        try:
+            report.transition_to(self.target_status, moderator_name="demo")
+        except InvalidTransitionError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(
+                request,
+                f"Report marked as {self.target_status.replace('_', ' ')}."
+            )
+        return redirect('dashboard:report-detail', pk=pk)
+
+
+class AcknowledgeReportView(_BaseStatusActionView):
+    """TASK-040: POST /dashboard/reports/<uuid>/acknowledge/"""
+    target_status = RawPost.STATUS_ACKNOWLEDGED
+
+
+class InProgressReportView(_BaseStatusActionView):
+    """TASK-040: POST /dashboard/reports/<uuid>/in-progress/"""
+    target_status = RawPost.STATUS_IN_PROGRESS
+
+
+class ResolveReportView(_BaseStatusActionView):
+    """TASK-040: POST /dashboard/reports/<uuid>/resolve/"""
+    target_status = RawPost.STATUS_RESOLVED
+
+
+class DismissReportView(_BaseStatusActionView):
+    """TASK-040: POST /dashboard/reports/<uuid>/dismiss/"""
+    target_status = RawPost.STATUS_DISMISSED

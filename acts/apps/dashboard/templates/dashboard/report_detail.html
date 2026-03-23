@@ -9,6 +9,21 @@
 
 {% block content %}
 <div class="container-fluid py-4">
+
+    {# Django messages — shown after a status transition #}
+    {% if messages %}
+    <div class="row mb-3">
+        <div class="col-md-8">
+            {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="h3">Report Detail</h1>
@@ -227,15 +242,36 @@
                     <h5 class="mb-0">Actions</h5>
                 </div>
                 <div class="card-body">
-                    <div class="btn-group w-100">
+                    {# Real POST forms — one per valid next status #}
+                    <div class="d-flex flex-wrap gap-2 mb-3">
                         {% if available_next_statuses %}
                             {% for next_status in available_next_statuses %}
-                                <button class="btn btn-outline-primary flex-fill" type="button" onclick="updateStatus('{{ next_status }}')">
-                                    Mark {{ next_status|upper }}
-                                </button>
+                                {% if next_status != 'dismissed' %}
+                                <form method="POST"
+                                      action="{% if next_status == 'acknowledged' %}{% url 'dashboard:report-acknowledge' report.pk %}
+                                              {% elif next_status == 'in_progress' %}{% url 'dashboard:report-in-progress' report.pk %}
+                                              {% elif next_status == 'resolved' %}{% url 'dashboard:report-resolve' report.pk %}
+                                              {% endif %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-primary">
+                                        Mark {{ next_status|upper|cut:"_" }}
+                                    </button>
+                                </form>
+                                {% endif %}
                             {% endfor %}
                         {% else %}
                             <button class="btn btn-secondary" disabled>All actions completed</button>
+                        {% endif %}
+
+                        {# Dismiss — available for any non-terminal status #}
+                        {% if report.current_status != 'resolved' and report.current_status != 'dismissed' %}
+                        <form method="POST" action="{% url 'dashboard:report-dismiss' report.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger"
+                                    onclick="return confirm('Dismiss this report?')">
+                                <i class="bi bi-x-circle"></i> Dismiss
+                            </button>
+                        </form>
                         {% endif %}
                     </div>
 
@@ -248,7 +284,7 @@
                             </button>
                         </div>
                         <div class="col-md-6">
-                            <button class="btn btn-outline-danger w-100" type="button" data-bs-toggle="modal" data-bs-target="#flagModal">
+                            <button class="btn btn-outline-warning w-100" type="button" data-bs-toggle="modal" data-bs-target="#flagModal">
                                 <i class="bi bi-flag"></i> Flag for Review
                             </button>
                         </div>
