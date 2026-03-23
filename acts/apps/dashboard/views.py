@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from apps.webhook.models import RawPost
 from django.db.models import Count, Q
-from datetime import timedelta
+from datetime import timedelta, datetime
+from django.core.paginator import Paginator
 
 
 class StatsView(TemplateView):
@@ -296,13 +297,94 @@ class HistoryView(ListView):
     - Timeline of all status changes
     - Filters: date range, report ID search
     - Export to CSV
+    
+    Mock data notes (pending StatusChange model):
+    - Returns mock status transitions for all reports
+    - Filters by date range and report ID search
+    - Sorts by timestamp descending (newest first)
     """
+    model = RawPost
     template_name = 'dashboard/history.html'
     context_object_name = 'status_changes'
+    paginate_by = 50
     
     def get_queryset(self):
-        # Placeholder: SWE-2 will implement
-        return []
+        """Generate mock status change history from all reports"""
+        import random
+        
+        # Get all reports
+        all_reports = RawPost.objects.all()
+        
+        # Generate mock status changes for each report
+        all_changes = []
+        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        
+        for report in all_reports:
+            now = timezone.now()
+            num_transitions = random.randint(2, 4)
+            
+            for i in range(num_transitions):
+                all_changes.append({
+                    'id': f"{report.id}_{i}",
+                    'report_id': report.id,
+                    'timestamp': now - timedelta(hours=random.randint(1, 72)),
+                    'from_status': statuses[i-1] if i > 0 else 'reported',
+                    'to_status': statuses[i],
+                    'notes': f'Status changed to {statuses[i]}',
+                    'changed_by': random.choice(['System', 'Moderator', 'Auto']),
+                })
+        
+        # Sort by timestamp descending
+        all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return all_changes
+    
+    def get_context_data(self, **kwargs):
+        """Apply filters and add context"""
+        context = super().get_context_data(**kwargs)
+        
+        # Get filter parameters
+        date_from_str = self.request.GET.get('date_from', '')
+        date_to_str = self.request.GET.get('date_to', '')
+        report_id_search = self.request.GET.get('report_id', '')
+        
+        # Get base queryset
+        status_changes = self.get_queryset()
+        
+        # Filter by date range
+        if date_from_str:
+            try:
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                status_changes = [c for c in status_changes if c['timestamp'] >= date_from]
+            except ValueError:
+                pass
+        
+        if date_to_str:
+            try:
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                status_changes = [c for c in status_changes if c['timestamp'] <= date_to]
+            except ValueError:
+                pass
+        
+        # Filter by report ID search
+        if report_id_search:
+            status_changes = [c for c in status_changes if str(report_id_search).lower() in str(c['report_id']).lower()]
+        
+        # Add filters to context
+        context['date_from'] = date_from_str
+        context['date_to'] = date_to_str
+        context['report_id'] = report_id_search
+        context['total_changes'] = len(status_changes)
+        
+        # Re-paginate filtered results
+        paginator = Paginator(status_changes, self.paginate_by)
+        page_number = self.request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+        context['page_obj'] = page_obj
+        context['paginator'] = paginator
+        context['status_changes'] = page_obj.object_list
+        
+        return context
 
 
 class HistoryExportView(View):
@@ -310,12 +392,76 @@ class HistoryExportView(View):
     TASK-034: CSV export of status history
     
     Returns properly formatted CSV with:
-    - Timestamp, Report ID, Status transition, Notes
+    - Timestamp, Report ID, Status transition, Notes, Changed By
+    Respects filters: date range and report ID search
     """
     def get(self, request):
-        # Placeholder: SWE-2 will implement CSV generation
+        import csv
+        import random
+        from datetime import datetime as dt
+        
+        # Get filter parameters
+        date_from_str = request.GET.get('date_from', '')
+        date_to_str = request.GET.get('date_to', '')
+        report_id_search = request.GET.get('report_id', '')
+        
+        # Generate mock data (same as HistoryView)
+        all_reports = RawPost.objects.all()
+        all_changes = []
+        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        
+        for report in all_reports:
+            now = timezone.now()
+            num_transitions = random.randint(2, 4)
+            
+            for i in range(num_transitions):
+                all_changes.append({
+                    'report_id': report.id,
+                    'timestamp': now - timedelta(hours=random.randint(1, 72)),
+                    'from_status': statuses[i-1] if i > 0 else 'reported',
+                    'to_status': statuses[i],
+                    'notes': f'Status changed to {statuses[i]}',
+                    'changed_by': random.choice(['System', 'Moderator', 'Auto']),
+                })
+        
+        # Sort by timestamp descending
+        all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        # Apply filters
+        if date_from_str:
+            try:
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+                all_changes = [c for c in all_changes if c['timestamp'] >= date_from]
+            except ValueError:
+                pass
+        
+        if date_to_str:
+            try:
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                all_changes = [c for c in all_changes if c['timestamp'] <= date_to]
+            except ValueError:
+                pass
+        
+        if report_id_search:
+            all_changes = [c for c in all_changes if str(report_id_search).lower() in str(c['report_id']).lower()]
+        
+        # Create CSV response
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="acts_history_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow(['Timestamp', 'Report ID', 'Status Transition', 'Notes', 'Changed By'])
+        
+        for change in all_changes:
+            transition = f"{change['from_status']} → {change['to_status']}"
+            writer.writerow([
+                change['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
+                str(change['report_id']),
+                transition,
+                change['notes'],
+                change['changed_by'],
+            ])
+        
         return response
 
 
