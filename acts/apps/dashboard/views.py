@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from apps.webhook.models import RawPost
+from apps.webhook.models import RawPost, CorrectionLog
 from apps.triage.exceptions import InvalidTransitionError
 from django.db.models import Count, Q
 from datetime import timedelta, datetime
@@ -233,7 +233,29 @@ class ReportDetailView(DetailView):
         import random
         report.urgency_score = random.randint(1, 100)
         report.confidence = float(round(random.uniform(0.5, 1.0), 2))
-        report.category = random.choice(['disaster', 'transport', 'infrastructure', 'safety', 'other'])
+        
+        # Check for category override in CorrectionLog
+        category_overrides = CorrectionLog.objects.filter(
+            report=report,
+            field_name='category'
+        ).order_by('-corrected_at')
+        
+        if category_overrides.exists():
+            report.category = category_overrides.first().new_value
+        else:
+            report.category = random.choice(['disaster', 'transport', 'infrastructure', 'safety', 'other'])
+        
+        # Check for location_text override in CorrectionLog
+        location_overrides = CorrectionLog.objects.filter(
+            report=report,
+            field_name='location_text'
+        ).order_by('-corrected_at')
+        
+        if location_overrides.exists():
+            report.location_text = location_overrides.first().new_value
+        else:
+            report.location_text = None
+        
         report.barangay = random.choice(['Cabanatuan', 'San Fernando', 'Talugtug', 'General Nakar', 
                                         'Amadeo', 'Imus', 'Tagaytay', 'Cavite City', 'Noveleta', 'Bacoor'])
         report.confidence_threshold = 0.75
@@ -255,6 +277,9 @@ class ReportDetailView(DetailView):
 
         # Status history: empty list for now (StatusChange model pending)
         context['status_changes'] = []
+        
+        # Add correction history to context
+        context['corrections'] = report.corrections.all().order_by('-corrected_at')
 
         # Mock auto-reply
         now = timezone.now()
@@ -507,11 +532,6 @@ class ReportsGeoJSONView(View):
         }
         return JsonResponse(geojson)
 
-
-# ---------------------------------------------------------------------------
-# TASK-040: Status action views
-# ---------------------------------------------------------------------------
-
 class _BaseStatusActionView(View):
     """
     Base class for all status-transition POST views.
@@ -555,3 +575,95 @@ class ResolveReportView(_BaseStatusActionView):
 class DismissReportView(_BaseStatusActionView):
     """TASK-040: POST /dashboard/reports/<uuid>/dismiss/"""
     target_status = RawPost.STATUS_DISMISSED
+
+class OverrideReportView(View):
+    """
+    TASK-041: Override report fields (category, location_text)
+    
+    Accepts POST with optional category and/or location_text parameters.
+    Updates those fields on the RawPost instance and creates a CorrectionLog
+    entry for each field that was changed.
+    
+    Returns:
+    - JSON response with success/error status
+    - Redirect to report detail page on success
+    """
+    http_method_names = ['post']
+    
+    def post(self, request, pk):
+        report = get_object_or_404(RawPost, pk=pk)
+        
+        try:
+            # Get submitted values
+            new_category = request.POST.get('category', '').strip()
+            new_location_text = request.POST.get('location_text', '').strip()
+            
+            # Track what was changed
+            changes_made = []
+            
+            # Handle category override
+            if new_category:
+                # Get the current/old value from most recent correction log or None
+                last_category_correction = CorrectionLog.objects.filter(
+                    report=report,
+                    field_name='category'
+                ).order_by('-corrected_at').first()
+                
+                if last_category_correction:
+                    old_category = last_category_correction.new_value
+                else:
+                    old_category = None
+                
+                # Only create a log if the value is changing
+                if old_category != new_category:
+                    CorrectionLog.objects.create(
+                        report=report,
+                        field_name='category',
+                        old_value=old_category,
+                        new_value=new_category,
+                        corrected_by=request.POST.get('corrected_by', 'demo'),
+                    )
+                    # Store on the report object for context in detail view
+                    report.category = new_category
+                    changes_made.append('category')
+            
+            # Handle location_text override
+            if new_location_text:
+                # Get the current/old value from most recent correction log or None
+                last_location_correction = CorrectionLog.objects.filter(
+                    report=report,
+                    field_name='location_text'
+                ).order_by('-corrected_at').first()
+                
+                if last_location_correction:
+                    old_location_text = last_location_correction.new_value
+                else:
+                    old_location_text = None
+                
+                # Only create a log if the value is changing
+                if old_location_text != new_location_text:
+                    CorrectionLog.objects.create(
+                        report=report,
+                        field_name='location_text',
+                        old_value=old_location_text,
+                        new_value=new_location_text,
+                        corrected_by=request.POST.get('corrected_by', 'demo'),
+                    )
+                    # Store on the report object
+                    report.location_text = new_location_text
+                    changes_made.append('location_text')
+            
+            # Success message
+            if changes_made:
+                fields_text = ' and '.join(changes_made)
+                messages.success(
+                    request,
+                    f"Report {fields_text} {'was' if len(changes_made) == 1 else 'were'} updated."
+                )
+            else:
+                messages.warning(request, "No fields were updated.")
+            
+        except Exception as e:
+            messages.error(request, f"Error updating report: {str(e)}")
+        
+        return redirect('dashboard:report-detail', pk=pk)

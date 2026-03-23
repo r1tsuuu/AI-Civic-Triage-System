@@ -30,6 +30,7 @@ urlpatterns = [
     path("reports/<uuid:pk>/resolve/", views.ResolveReportView.as_view(), name="report-resolve"),
     path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="report-dismiss"),
 
-    # TASK-041: API endpoints for map data
+    # TASK-041: Override endpoint for moderation and API endpoints for map data
+    path("reports/<uuid:pk>/override/", views.OverrideReportView.as_view(), name="report-override"),
     path("api/reports/geojson/", views.ReportsGeoJSONView.as_view(), name="reports-geojson"),
 ]

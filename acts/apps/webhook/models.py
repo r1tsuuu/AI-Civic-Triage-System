@@ -63,3 +63,29 @@ class RawPost(models.Model):
             )
         self.status = new_status
         self.save(update_fields=["status"])
+
+
+class CorrectionLog(models.Model):
+    """
+    TASK-041: Audit log for report field corrections/overrides
+    
+    Tracks all manual overrides made by moderators, including:
+    - Which report was corrected
+    - Which field was changed
+    - Old and new values
+    - Who made the change
+    - When the change was made
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    report = models.ForeignKey(RawPost, on_delete=models.CASCADE, related_name='corrections')
+    field_name = models.CharField(max_length=50)  # e.g., 'category', 'location_text'
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+    corrected_by = models.CharField(max_length=255, default='demo')
+    corrected_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-corrected_at"]
+
+    def __str__(self):
+        return f"CorrectionLog({self.report.id}, {self.field_name}: {self.old_value} → {self.new_value})"
