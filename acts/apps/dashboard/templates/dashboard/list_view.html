@@ -1,0 +1,213 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Reports - ACTS Demo{% endblock %}
+
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<!-- Filter Bar -->
+<div class="filter-bar mb-4">
+    <form method="get" id="filter-form">
+        <div class="filter-group">
+            <div>
+                <label for="category">Category</label>
+                <select id="category" name="category" class="form-control">
+                    <option value="">All Categories</option>
+                    {% for category in category_options %}
+                        <option value="{{ category }}" {% if category_filter == category %}selected{% endif %}>
+                            {{ category|title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="status">Status</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="">All Statuses</option>
+                    {% for status in status_options %}
+                        <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>
+                            {{ status|title }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="barangay">Barangay</label>
+                <select id="barangay" name="barangay" class="form-control">
+                    <option value="">All Barangays</option>
+                    {% for barangay in barangay_options %}
+                        <option value="{{ barangay }}" {% if barangay_filter == barangay %}selected{% endif %}>
+                            {{ barangay }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label for="sort">Sort By</label>
+                <select id="sort" name="sort" class="form-control">
+                    {% for sort_val, sort_label in sort_options %}
+                        <option value="{{ sort_val }}">{{ sort_label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="filter-group">
+            <div>
+                <label for="date_from">From Date</label>
+                <input type="date" id="date_from" name="date_from" class="form-control" value="{{ date_from }}">
+            </div>
+            
+            <div>
+                <label for="date_to">To Date</label>
+                <input type="date" id="date_to" name="date_to" class="form-control" value="{{ date_to }}">
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                <a href="{% url 'dashboard:report-list' %}" class="btn btn-secondary btn-sm">Clear</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Report Count -->
+<div class="mb-3">
+    <small class="text-muted">
+        Showing {{ reports|length }} report(s)
+        {% if category_filter or status_filter or barangay_filter or date_from or date_to %}
+            (filtered)
+        {% endif %}
+    </small>
+</div>
+
+<!-- Reports Table -->
+<div class="table-responsive">
+    {% if reports %}
+        <table class="report-table table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Category</th>
+                    <th>Urgency</th>
+                    <th>Location</th>
+                    <th>Time Received</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                    <tr {% if report.has_low_confidence %}class="low-confidence"{% endif %}>
+                        <td>
+                            <code>{{ report.facebook_post_id|truncatechars:12 }}</code>
+                            {% if report.has_low_confidence %}
+                                <br>
+                                <span class="low-confidence-tag">Low Confidence</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="category-badge {{ report.category }}">
+                                {{ report.category|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="urgency-bar-container">
+                                <strong>{{ report.urgency_score }}</strong>
+                                <div class="urgency-bar">
+                                    <div class="urgency-fill {% if report.urgency_score >= 75 %}critical{% elif report.urgency_score >= 50 %}warning{% else %}low{% endif %}"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <small>{{ report.barangay }}</small>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ report.received_at|date:"M d, Y H:i" }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="status-badge {{ report.status|slugify }}">
+                                {{ report.status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'dashboard:report-detail' report.id %}" class="btn btn-sm btn-primary">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="stat-card text-center py-5">
+            <p class="text-muted"><i class="bi bi-inbox" style="font-size: 2rem;"></i></p>
+            <p class="text-muted mt-3">No reports found. Try adjusting your filters.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}&lt">
+                        First
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        Previous
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        Next
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
+                        Last
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Auto-submit filters when they change
+    document.getElementById('filter-form').addEventListener('change', function(e) {
+        if (e.target.name === 'category' || e.target.name === 'status' || e.target.name === 'barangay' || e.target.name === 'sort') {
+            this.submit();
+        }
+    });
+</script>
+{% endblock %}

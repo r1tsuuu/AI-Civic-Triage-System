@@ -15,7 +15,7 @@ urlpatterns = [
     path("reports/", views.ReportListView.as_view(), name="report-list"),
 
     # TASK-033: Report detail view
-    path("reports/<int:pk>/", views.ReportDetailView.as_view(), name="report-detail"),
+    path("reports/<uuid:pk>/", views.ReportDetailView.as_view(), name="report-detail"),
 
     # TASK-034: History view
     path("history/", views.HistoryView.as_view(), name="history"),

@@ -231,7 +231,43 @@ main.container-fluid {
 }
 
 /* ================================================================
-   7. Card Styles
+   7. Urgency Bar Styles
+   ================================================================ */
+
+.urgency-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.urgency-bar {
+    width: 80px;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.urgency-fill {
+    height: 100%;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.urgency-fill.critical {
+    background-color: #E02424;  /* >= 75 */
+}
+
+.urgency-fill.warning {
+    background-color: #FF9500;  /* >= 50 */
+}
+
+.urgency-fill.low {
+    background-color: #057A55;  /* < 50 */
+}
+
+/* ================================================================
+   8. Card Styles
    ================================================================ */
 
 .stat-card {
