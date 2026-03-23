@@ -1,70 +1,5 @@
-/* ================================================================
-   History View - Component Styles
-   ================================================================ */
+/* Legacy custom filter classes removed; now using Bootstrap native cards */
 
-/* Filter Bar */
-.filter-bar {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 0.5rem;
-    border: 1px solid #e2e8f0;
-    margin-bottom: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.filter-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
-
-.filter-group {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-}
-
-.filter-group > div {
-    display: flex;
-    flex-direction: column;
-}
-
-.filter-group label {
-    display: block;
-    color: #475569;
-    font-weight: 600;
-    font-size: 0.875rem;
-    margin-bottom: 0.5rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.filter-group .form-control {
-    border: 1px solid #cbd5e1;
-    border-radius: 0.375rem;
-    padding: 0.625rem 0.75rem;
-    font-size: 0.875rem;
-}
-
-.filter-group .form-control:focus {
-    border-color: #1A56DB;
-    box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
-}
-
-.filter-actions {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: flex-start;
-}
-
-.filter-actions .btn {
-    padding: 0.625rem 1rem;
-    font-weight: 500;
-    border-radius: 0.375rem;
-    font-size: 0.875rem;
-}
-
-/* Results Summary */
 .results-summary {
     padding: 0.75rem 1rem;
     background-color: #f9fafb;
@@ -72,7 +7,6 @@
     border-radius: 0.25rem;
 }
 
-/* History Timeline */
 .history-timeline {
     position: relative;
     padding: 2rem 0 2rem 3.5rem;
@@ -88,24 +22,23 @@
     background-color: #e2e8f0;
 }
 
-/* Timeline Item */
 .timeline-item {
     position: relative;
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s ease;
+    border: 1px solid #f1f5f9;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .timeline-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #cbd5e1;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+    transform: translateY(-2px);
+    border-color: #e2e8f0;
 }
 
-/* Timeline Marker (dot) */
 .timeline-marker {
     position: absolute;
     left: -2.75rem;
@@ -121,7 +54,6 @@
     border-radius: 50%;
 }
 
-/* Timeline Header */
 .timeline-header {
     display: flex;
     justify-content: space-between;
@@ -131,7 +63,6 @@
     gap: 1rem;
 }
 
-/* Transition Badge */
 .transition-badge {
     display: inline-block;
     background-color: #dbeafe;
@@ -148,7 +79,6 @@
     font-size: 0.75rem;
 }
 
-/* Timestamp */
 .timestamp {
     color: #64748b;
     font-size: 0.875rem;
@@ -157,7 +87,6 @@
     letter-spacing: 0.5px;
 }
 
-/* Timeline Body */
 .timeline-body {
     margin-bottom: 1rem;
 }
@@ -204,7 +133,6 @@
     color: #475569;
 }
 
-/* Timeline Footer */
 .timeline-footer {
     padding-top: 0.75rem;
     border-top: 1px solid #e5e7eb;
@@ -215,7 +143,6 @@
     font-size: 0.8rem;
 }
 
-/* Export Button */
 #export-btn {
     padding: 0.625rem 1rem;
     font-weight: 500;
@@ -229,7 +156,6 @@
     border-color: #1A56DB;
 }
 
-/* Pagination */
 .pagination {
     gap: 0.25rem;
 }
@@ -254,7 +180,7 @@
     color: white;
 }
 
-/* Responsive Design */
+
 @media (max-width: 768px) {
     .history-timeline {
         padding: 1.5rem 0 1.5rem 2.5rem;
@@ -298,7 +224,6 @@
     }
 }
 
-/* Print Media */
 @media print {
     .filter-bar,
     .results-summary,

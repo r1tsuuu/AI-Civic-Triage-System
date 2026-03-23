@@ -22,43 +22,45 @@
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-        <form method="get" class="filter-form" id="filter-form">
-            <div class="filter-group">
-                <div>
-                    <label for="date_from">From Date:</label>
-                    <input type="date" id="date_from" name="date_from" class="form-control" value="{{ date_from }}">
+    <!-- filter bar -->
+    <div class="card shadow-sm border-0 mb-4 rounded-3">
+        <div class="card-body">
+            <form method="get" class="filter-form" id="filter-form">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="date_from" class="form-label text-secondary fw-semibold small text-uppercase mb-1">From Date:</label>
+                        <input type="date" id="date_from" name="date_from" class="form-control border-light-subtle" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_to" class="form-label text-secondary fw-semibold small text-uppercase mb-1">To Date:</label>
+                        <input type="date" id="date_to" name="date_to" class="form-control border-light-subtle" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="report_id" class="form-label text-secondary fw-semibold small text-uppercase mb-1">Report ID:</label>
+                        <input type="text" id="report_id" name="report_id" class="form-control border-light-subtle" 
+                               placeholder="Search by report ID..." value="{{ report_id }}">
+                    </div>
                 </div>
-                <div>
-                    <label for="date_to">To Date:</label>
-                    <input type="date" id="date_to" name="date_to" class="form-control" value="{{ date_to }}">
+                <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top border-light-subtle">
+                    <a href="{% url 'dashboard:history' %}" class="btn btn-outline-secondary px-3">
+                        <i class="bi bi-x-circle"></i> Clear
+                    </a>
+                    <button type="submit" class="btn btn-primary px-3">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
                 </div>
-                <div>
-                    <label for="report_id">Report ID:</label>
-                    <input type="text" id="report_id" name="report_id" class="form-control" 
-                           placeholder="Search by report ID..." value="{{ report_id }}">
-                </div>
-            </div>
-            <div class="filter-actions">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-funnel"></i> Filter
-                </button>
-                <a href="{% url 'dashboard:history' %}" class="btn btn-outline-secondary">
-                    <i class="bi bi-x-circle"></i> Clear
-                </a>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 
-    <!-- Results Summary -->
+    <!-- results summary -->
     <div class="results-summary mb-3">
         <small class="text-muted">
             Showing {{ status_changes|length }} of {{ total_changes }} total status changes
         </small>
     </div>
 
-    <!-- Timeline -->
+    <!-- timeline -->
     {% if status_changes %}
     <div class="history-timeline">
         {% for change in status_changes %}
@@ -95,7 +97,6 @@
         {% endfor %}
     </div>
 
-    <!-- Pagination -->
     {% if paginator.num_pages > 1 %}
     <nav aria-label="Page navigation" class="mt-4">
         <ul class="pagination justify-content-center">

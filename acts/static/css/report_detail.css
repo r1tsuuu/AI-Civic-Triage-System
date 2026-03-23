@@ -1,15 +1,9 @@
-/* ================================================================
-   Report Detail View - Component Styles
-   ================================================================ */
-
-/* Status Badge */
 #status-badge {
     font-size: 0.9rem;
     padding: 0.5rem 1rem;
     border-radius: 0.375rem;
 }
 
-/* Urgency Badge - Color classes */
 .urgency-badge {
     font-weight: 600;
     padding: 0.375rem 0.75rem;
@@ -31,7 +25,6 @@
     color: white;
 }
 
-/* Category Badge - Color classes */
 .category-badge {
     font-weight: 600;
     padding: 0.425rem 0.75rem;
@@ -64,7 +57,6 @@
     color: white;
 }
 
-/* Coordinate Display */
 .coordinate-display {
     font-size: 0.8rem;
     font-family: 'Courier New', monospace;
@@ -74,7 +66,6 @@
     display: block;
 }
 
-/* Confidence Progress Bar */
 .confidence-progress {
     height: 24px;
     border-radius: 0.375rem;
@@ -100,7 +91,6 @@
     background-color: #FFB81C;
 }
 
-/* Signal Score Progress Bar */
 .signal-progress {
     height: 6px;
     border-radius: 0.25rem;
@@ -114,7 +104,6 @@
     transition: width 0.2s ease;
 }
 
-/* Signal Breakdown Container */
 .signal-breakdown-item {
     margin-bottom: 1rem;
 }
@@ -136,7 +125,6 @@
     font-weight: 700;
 }
 
-/* Detail Map Container */
 #detail-map {
     height: 300px;
     width: 100%;
@@ -144,7 +132,6 @@
     box-shadow: inset 0 0 0 1px #e5e7eb;
 }
 
-/* Location Unresolved Placeholder */
 .location-placeholder {
     display: flex;
     align-items: center;
@@ -171,7 +158,6 @@
     font-size: 0.875rem;
 }
 
-/* Override Form */
 #override-form {
     background-color: #f9fafb;
     padding: 1rem;
@@ -199,7 +185,6 @@
     box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
-/* Auto-Reply Card */
 .auto-reply-card {
     background-color: #eff6ff;
     border: 1px solid #bfdbfe;
@@ -225,7 +210,6 @@
     background-color: #10B981;
 }
 
-/* Action Buttons */
 .action-button-group {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -238,7 +222,6 @@
     border-radius: 0.375rem;
 }
 
-/* Modal Styling */
 .modal-dialog .modal-header {
     border-bottom: 2px solid #f3f4f6;
 }
@@ -254,7 +237,6 @@
     color: #374151;
 }
 
-/* Routing Notes Textarea */
 #routing-notes {
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
@@ -268,7 +250,6 @@
     box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
-/* Card Header */
 .report-card-header {
     background-color: #f9fafb;
     border-bottom: 1px solid #e5e7eb;
@@ -281,7 +262,6 @@
     margin: 0;
 }
 
-/* Quick Stats Label */
 .quick-stats-label {
     font-weight: 600;
     color: #475569;
@@ -293,31 +273,26 @@
     font-size: 1.125rem;
 }
 
-/* Section Spacing */
 .report-section {
     margin-bottom: 2rem;
 }
 
-/* Card Body Padding */
 .report-card-body {
     padding: 1.5rem;
 }
 
-/* Status Badge Display */
 .status-display {
     display: flex;
     gap: 0.5rem;
     align-items: center;
 }
 
-/* Low Confidence Warning */
 .low-confidence-warning {
     color: #b45309;
     font-size: 0.875rem;
     margin-top: 0.5rem;
 }
 
-/* Timeline Container */
 .timeline {
     position: relative;
     padding: 1.5rem 0 1.5rem 3rem;
@@ -395,7 +370,6 @@
     margin-top: 0.5rem;
 }
 
-/* Empty State Message */
 .empty-state-alert {
     background-color: #dbeafe;
     border: 1px solid #bfdbfe;
@@ -404,7 +378,6 @@
     padding: 1rem;
 }
 
-/* Flag Modal Form */
 #flag-reason {
     border: 1px solid #d1d5db;
     border-radius: 0.375rem;
@@ -417,7 +390,7 @@
     box-shadow: 0 0 0 3px rgba(26, 86, 219, 0.1);
 }
 
-/* Responsive Adjustments */
+
 @media (max-width: 768px) {
     .confidence-progress {
         height: 20px;
@@ -448,7 +421,6 @@
     }
 }
 
-/* Print Media */
 @media print {
     .action-button-group,
     .btn-toolbar,
