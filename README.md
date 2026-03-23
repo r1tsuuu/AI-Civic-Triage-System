@@ -30,6 +30,15 @@ cd AI-Civic-Triage-System/acts
 **2. Create and activate a virtual environment**
 ```bash
 python3.11 -m venv .venv
+```
+
+For Windows:
+```bash
+.venv\Scripts\activate
+```
+
+For Mac/Linux:
+```bash
 source .venv/bin/activate
 ```
 
