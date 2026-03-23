@@ -9,7 +9,7 @@ Assigned to SWE-2 for implementation in TASK-031 through TASK-041.
 from django.views.generic import TemplateView, ListView, DetailView, View
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
-from triage.models import RawPost
+from apps.webhook.models import RawPost
 from django.db.models import Count, Q
 from datetime import timedelta
 
@@ -19,22 +19,43 @@ class StatsView(TemplateView):
     TASK-031: Dashboard statistics view
     
     Displays:
-    - Reports received in last 24 hours
-    - Resolution rate as percentage
-    - Most affected barangay
-    - Most reported category
+    - Reports received in last 24 hours (real query from RawPost)
+    - Resolution rate as percentage (fixture data - pending StatusChange model)
+    - Most affected barangay (fixture data - pending location field in RawPost)
+    - Most reported category (fixture data - pending classification in triage app)
+    
+    Note: Using fixture data for stats pending completion of triage pipeline models.
+    24-hour count is real-time from RawPost.received_at.
     """
     template_name = 'dashboard/stats.html'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Placeholder: SWE-2 will implement with real queries
+        
+        # Real query: Reports received in last 24 hours
+        now = timezone.now()
+        twenty_four_hours_ago = now - timedelta(hours=24)
+        reports_24h = RawPost.objects.filter(
+            received_at__gte=twenty_four_hours_ago
+        ).count()
+        
+        # Fixture data (pending triage pipeline implementation)
+        # In production, these will be calculated from:
+        # - StatusChange model for resolution_rate
+        # - Classification model for most_reported_category
+        # - Location field in RawPost/Classification for most_affected_barangay
+        
         context['stats'] = {
-            'reports_24h': 0,
-            'resolution_rate': 0,
-            'most_affected_barangay': 'Loading...',
-            'most_reported_category': 'Loading...',
+            'reports_24h': reports_24h,
+            'reports_24h_change': 12,  # fixture: trend indicator
+            'resolution_rate': 78,  # fixture: calculated from StatusChange.resolved / total
+            'resolution_rate_change': 5,  # fixture: trend indicator
+            'most_affected_barangay': 'Cabanatuan',  # fixture: pending location data
+            'most_affected_count': 24,  # fixture: count in that barangay
+            'most_reported_category': 'Disaster',  # fixture: pending classification data
+            'most_reported_count': 18,  # fixture: count in that category
         }
+        
         return context
 
 
