@@ -696,6 +696,237 @@ main.container-fluid {
     }
 }
 
+/* ================================================================
+   14. Report Detail View - Progress Stepper & Additional Styles
+   ================================================================ */
+
+.progress-stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.stepper-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stepper-circle {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    border: 2px solid #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.stepper-step.active .stepper-circle {
+    background-color: var(--acts-blue);
+    border-color: var(--acts-blue);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1);
+}
+
+.stepper-step.completed .stepper-circle {
+    background-color: var(--acts-green);
+    border-color: var(--acts-green);
+    color: white;
+}
+
+.stepper-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6b7280;
+    white-space: nowrap;
+}
+
+.stepper-step.active .stepper-label {
+    color: var(--acts-blue);
+}
+
+.stepper-step.completed .stepper-label {
+    color: var(--acts-green);
+}
+
+/* Connecting line between steps */
+.stepper-step::after {
+    content: '';
+    position: absolute;
+    top: 1.5rem;
+    left: 50%;
+    width: 100%;
+    height: 2px;
+    background-color: #d1d5db;
+    transform: translateX(50%);
+}
+
+.stepper-step:last-child::after {
+    display: none;
+}
+
+.stepper-step.completed::after {
+    background-color: var(--acts-green);
+}
+
+/* ================================================================
+   15. Report Detail View - Additional Components
+   ================================================================ */
+
+/* Signal breakdown progress bars */
+.signal-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.signal-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.signal-item .label {
+    min-width: 120px;
+    font-weight: 500;
+    color: #475569;
+}
+
+.signal-item .value {
+    font-weight: 600;
+    color: #1f2937;
+    min-width: 60px;
+    text-align: right;
+}
+
+/* Override form */
+#override-form {
+    background-color: #f9fafb;
+    padding: 1rem;
+    border-radius: 0.375rem;
+}
+
+/* Auto-reply card */
+.bg-light-blue {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.bg-light-blue .card-header {
+    background-color: #dbeafe;
+    border-bottom: 1px solid #bfdbfe;
+}
+
+/* Action buttons group */
+.btn-group .btn {
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+}
+
+.btn-group .btn:not(:last-child) {
+    margin-right: 0.5rem;
+}
+
+/* Badge styles for status display */
+#status-badge {
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+}
+
+#status-badge[status="reported"] {
+    background-color: var(--status-reported);
+}
+
+#status-badge[status="acknowledged"] {
+    background-color: var(--status-acknowledged);
+}
+
+#status-badge[status="in-progress"] {
+    background-color: var(--status-in-progress);
+}
+
+#status-badge[status="resolved"] {
+    background-color: var(--status-resolved);
+}
+
+/* Location map container */
+#detail-map {
+    border-radius: 0.375rem;
+    box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+/* Confidence progress bar */
+.progress {
+    background-color: #e5e7eb;
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.progress-bar {
+    background-color: var(--acts-blue);
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-bar.bg-success {
+    background-color: var(--acts-green);
+}
+
+.progress-bar.bg-warning {
+    background-color: #FFB81C;
+}
+
+/* Modal improvements */
+.modal-dialog .modal-header {
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.modal-dialog .modal-body {
+    padding: 2rem;
+}
+
+/* Timeline improvements */
+.timeline-item {
+    padding: 1.5rem;
+    background: white;
+    border-left: 4px solid var(--acts-blue);
+    transition: all 0.2s ease;
+}
+
+.timeline-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.timeline-item strong {
+    display: block;
+    color: #1f2937;
+    margin-bottom: 0.25rem;
+}
+
+/* Quick stats card on detail page */
+.card-header {
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.card-header h6 {
+    color: #374151;
+    font-weight: 600;
+    margin: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
     * {
         animation-duration: 0.01ms !important;

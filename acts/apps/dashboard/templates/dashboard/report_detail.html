@@ -1,0 +1,458 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Report Detail - ACTS{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/report_detail.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3">Report Detail</h1>
+            <small class="text-muted">ID: {{ report.id }}</small>
+        </div>
+        <div class="col-md-4 text-end">
+            <span class="badge" id="status-badge">
+                {{ report.current_status|upper }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Section 1: Original Post Text -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Original Report</h5>
+                </div>
+                <div class="card-body">
+                    <p class="lead" id="post-text">{{ report.post_text }}</p>
+                    <small class="text-muted">
+                        Received {{ report.received_at|date:"M d, Y H:i" }}
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Quick Stats -->
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0">Quick Stats</h6>
+                </div>
+                <div class="card-body small">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <strong>Urgency:</strong><br>
+                            <span class="urgency-badge {% if report.urgency_score > 70 %}critical{% elif report.urgency_score > 40 %}warning{% else %}low{% endif %}">
+                                {{ report.urgency_score }}/100
+                            </span>
+                        </div>
+                        <div class="col-6">
+                            <strong>Confidence:</strong><br>
+                            <span class="badge bg-info">
+                                {{ report.confidence|floatformat:0 }}%
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0">Location</h6>
+                </div>
+                <div class="card-body small">
+                    {% if report.latitude %}
+                        <strong>{{ report.barangay }}</strong><br>
+                        <code class="coordinate-display">{{ report.latitude }}, {{ report.longitude }}</code>
+                    {% else %}
+                        <span class="text-muted">Location unresolved by NER</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Classification Panel -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Classification</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Category:</strong><br>
+                            <span class="category-badge {{ report.category }}">
+                                {{ report.category|upper }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Confidence:</strong><br>
+                            {% widthratio report.confidence 1 100 as conf_percent %}
+                            {% widthratio report.confidence_threshold 1 100 as thresh_percent %}
+                            <div class="confidence-progress">
+                                <div class="progress-bar {% if report.has_low_confidence %}bg-warning{% else %}bg-success{% endif %}"
+                                     role="progressbar"
+                                     data-width="{{ conf_percent }}"
+                                     aria-valuenow="{{ conf_percent }}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                    {{ report.confidence|floatformat:1 }}
+                                </div>
+                            </div>
+                            {% if report.has_low_confidence %}
+                                <small class="low-confidence-warning">⚠ Below {{ thresh_percent }}% threshold</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <strong>Signal Breakdown:</strong>
+                    <div class="row small mt-2">
+                        <div class="col-md-6">
+                            <div class="signal-breakdown-item">
+                                <div class="label">
+                                    <span>Keyword Score:</span>
+                                    <strong>{{ signal_breakdown.keyword_score }}/100</strong>
+                                </div>
+                                <div class="signal-progress">
+                                    <div class="progress-bar" data-width="{{ signal_breakdown.keyword_score }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="signal-breakdown-item">
+                                <div class="label">
+                                    <span>Location Score:</span>
+                                    <strong>{{ signal_breakdown.location_score }}/100</strong>
+                                </div>
+                                <div class="signal-progress">
+                                    <div class="progress-bar" data-width="{{ signal_breakdown.location_score }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="signal-breakdown-item">
+                                <div class="label">
+                                    <span>Time Score:</span>
+                                    <strong>{{ signal_breakdown.time_score }}/100</strong>
+                                </div>
+                                <div class="signal-progress">
+                                    <div class="progress-bar" data-width="{{ signal_breakdown.time_score }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="signal-breakdown-item">
+                                <div class="label">
+                                    <span>Consistency Score:</span>
+                                    <strong>{{ signal_breakdown.consistency_score }}/100</strong>
+                                </div>
+                                <div class="signal-progress">
+                                    <div class="progress-bar" data-width="{{ signal_breakdown.consistency_score }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Location Panel (Map Placeholder) -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Location Map</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if report.latitude %}
+                        <div id="detail-map" data-latitude="{{ report.latitude }}" data-longitude="{{ report.longitude }}" data-barangay="{{ report.barangay }}"></div>
+                    {% else %}
+                        <div class="location-placeholder">
+                            <div>
+                                <i class="bi bi-geo-alt-fill"></i>
+                                <p>Location not yet extracted</p>
+                                <small>NER pipeline will extract barangay from post text</small>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: Status Stepper -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Status Progression</h5>
+                </div>
+                <div class="card-body">
+                    <div class="progress-stepper">
+                        {% for status in all_statuses %}
+                            <div class="stepper-step {% if status == report.current_status %}active{% elif report.current_status == 'resolved' or all_statuses.forloop.counter <= all_statuses|length %}completed{% endif %}">
+                                <div class="stepper-circle">
+                                    {% if status == report.current_status %}
+                                        <i class="bi bi-circle-fill"></i>
+                                    {% elif all_statuses|slice:":forloop.counter"|join:" " %}
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    {% else %}
+                                        <i class="bi bi-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="stepper-label">{{ status|upper }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 5: Action Buttons -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group w-100">
+                        {% if available_next_statuses %}
+                            {% for next_status in available_next_statuses %}
+                                <button class="btn btn-outline-primary flex-fill" type="button" onclick="updateStatus('{{ next_status }}')">
+                                    Mark {{ next_status|upper }}
+                                </button>
+                            {% endfor %}
+                        {% else %}
+                            <button class="btn btn-secondary" disabled>All actions completed</button>
+                        {% endif %}
+                    </div>
+
+                    <hr>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="modal" data-bs-target="#overrideModal">
+                                <i class="bi bi-pencil"></i> Override
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button class="btn btn-outline-danger w-100" type="button" data-bs-toggle="modal" data-bs-target="#flagModal">
+                                <i class="bi bi-flag"></i> Flag for Review
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: Routing Notes -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Routing Notes</h5>
+                </div>
+                <div class="card-body">
+                    <textarea class="form-control" id="routing-notes" rows="3" placeholder="Add internal notes for coordination...">{{ report.routing_notes }}</textarea>
+                    <button class="btn btn-sm btn-primary mt-2" onclick="saveRoutingNotes()">Save Notes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 7: Override Form (Collapsible) -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">
+                        <button class="btn btn-link text-decoration-none w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#overrideForm">
+                            Override Classification
+                        </button>
+                    </h5>
+                </div>
+                <div class="collapse" id="overrideForm">
+                    <div class="card-body">
+                        <form id="override-form" onsubmit="submitOverride(event)">
+                            <div class="mb-3">
+                                <label for="override-category" class="form-label">Category Override:</label>
+                                <select class="form-select" id="override-category" name="category">
+                                    <option value="">-- Select Category --</option>
+                                    {% for cat in category_options %}
+                                        <option value="{{ cat }}" {% if cat == report.category %}selected{% endif %}>
+                                            {{ cat|upper }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="override-location" class="form-label">Location Override:</label>
+                                <input type="text" class="form-control" id="override-location" name="location" 
+                                       placeholder="e.g., Barangay Cabanatuan" value="{{ report.barangay }}">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="override-status" class="form-label">Status Override:</label>
+                                <select class="form-select" id="override-status" name="status">
+                                    {% for status in all_statuses %}
+                                        <option value="{{ status }}" {% if status == report.current_status %}selected{% endif %}>
+                                            {{ status|upper }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Use only if automatic routing is incorrect</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="override-reason" class="form-label">Reason for Override:</label>
+                                <textarea class="form-control" id="override-reason" name="reason" rows="2" 
+                                          placeholder="Document why this override was necessary"></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning">Apply Override</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 8: Status History Timeline -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-light border-bottom">
+                    <h5 class="mb-0">Status History</h5>
+                </div>
+                <div class="card-body">
+                    {% if status_changes %}
+                        <div class="timeline">
+                            {% for change in status_changes %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker">
+                                        <i class="bi bi-arrow-right-circle-fill"></i>
+                                    </div>
+                                    <div class="timeline-content">
+                                        <strong>{{ change.to_status|upper }}</strong>
+                                        <div class="text-muted small">
+                                            {{ change.timestamp|date:"M d, Y H:i" }}
+                                        </div>
+                                        <p class="mb-1">{{ change.notes }}</p>
+                                        <small class="text-muted">by {{ change.changed_by }}</small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info" role="alert">
+                            No status history yet. Status changes will appear here.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 9: Auto-Reply (if sent) -->
+    {% if auto_reply %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card auto-reply-card">
+                <div class="card-header">
+                    <h5 class="mb-0">Auto-Reply Sent</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">{{ auto_reply.message }}</p>
+                    <small class="text-muted">
+                        Sent {{ auto_reply.sent_at|date:"M d, Y H:i" }} <span class="badge bg-success ms-2">{{ auto_reply.status }}</span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Override Modal -->
+<div class="modal fade" id="overrideModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Override Classification</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Use overrides to correct automatic classification if needed. Document the reason for auditing purposes.</p>
+                <div id="override-form-in-modal"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flag Modal -->
+<div class="modal fade" id="flagModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Flag for Senior Review</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="flag-reason" class="form-label">Reason for Flag:</label>
+                    <textarea class="form-control" id="flag-reason" rows="3" placeholder="e.g., Ambiguous location, multiple issues, misinformation"></textarea>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="submitFlag()">Submit Flag</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/report_detail.js' %}"></script>
+<script>
+    // Initialize map if coordinates available (needs Leaflet.js from base template)
+    document.addEventListener('DOMContentLoaded', function() {
+        const mapElement = document.getElementById('detail-map');
+        if (!mapElement) return;
+        
+        const latitude = parseFloat(mapElement.getAttribute('data-latitude'));
+        const longitude = parseFloat(mapElement.getAttribute('data-longitude'));
+        const barangay = mapElement.getAttribute('data-barangay');
+        
+        if (isNaN(latitude) || isNaN(longitude)) return;
+        
+        const detailMap = L.map('detail-map').setView([latitude, longitude], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(detailMap);
+        L.circleMarker([latitude, longitude], {
+            radius: 8,
+            fillColor: '#1A56DB',
+            color: '#fff',
+            weight: 2,
+            opacity: 1,
+            fillOpacity: 0.8,
+            popup: barangay
+        }).addTo(detailMap).bindPopup('Reported incident');
+    });
+</script>
+{% endblock %}

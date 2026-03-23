@@ -196,6 +196,12 @@ class ReportDetailView(DetailView):
     - Status stepper and history
     - Action buttons (valid next steps only)
     - Override forms (category, location, routing notes)
+    
+    Mock data notes (pending triage pipeline):
+    - Classification fields: urgency_score, confidence, category
+    - StatusChange history: mock transitions with timestamps
+    - AutoReply: sample AI response
+    - Routing notes: sample internal notes
     """
     model = RawPost
     template_name = 'dashboard/report_detail.html'
@@ -203,9 +209,82 @@ class ReportDetailView(DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Placeholder: SWE-2 will implement with real data
-        context['status_changes'] = []
-        context['auto_reply'] = None
+        report = context['report']
+        
+        # Add mock classification data
+        import random
+        report.urgency_score = random.randint(1, 100)
+        report.confidence = round(random.uniform(0.5, 1.0), 2)
+        report.category = random.choice(['disaster', 'transport', 'infrastructure', 'safety', 'other'])
+        report.barangay = random.choice(['Cabanatuan', 'San Fernando', 'Talugtug', 'General Nakar', 
+                                        'Amadeo', 'Imus', 'Tagaytay', 'Cavite City', 'Noveleta', 'Bacoor'])
+        report.confidence_threshold = 0.75
+        report.has_low_confidence = report.confidence < report.confidence_threshold
+        
+        # Mock routing notes
+        report.routing_notes = 'Priority: Medium. Route to Cabanatuan Municipal Health Office for verification.'
+        
+        # Mock location coordinates (some reports have them, some don't)
+        if random.random() > 0.3:  # 70% have coordinates
+            report.latitude = round(random.uniform(14.5, 15.5), 4)
+            report.longitude = round(random.uniform(120.5, 121.5), 4)
+        else:
+            report.latitude = None
+            report.longitude = None
+        
+        # Mock status change history
+        now = timezone.now()
+        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        status_changes = []
+        current_status = 'reported'
+        
+        for i, status in enumerate(statuses[:random.randint(2, 4)]):
+            status_changes.append({
+                'id': i,
+                'from_status': statuses[i-1] if i > 0 else None,
+                'to_status': status,
+                'timestamp': now - timedelta(hours=i*4),
+                'notes': f'Status changed to {status}',
+                'changed_by': 'System',
+            })
+            current_status = status
+        
+        # Sort by timestamp descending (newest first for display)
+        status_changes.sort(key=lambda x: x['timestamp'], reverse=True)
+        context['status_changes'] = status_changes
+        report.current_status = current_status
+        
+        # Mock auto-reply
+        context['auto_reply'] = {
+            'id': 'ar_001',
+            'message': 'Thank you for reporting this incident. Our team is investigating and will provide updates soon.',
+            'sent_at': now - timedelta(hours=0.5),
+            'status': 'sent',
+        }
+        
+        # Available actions based on current status
+        status_transitions = {
+            'reported': ['acknowledged'],
+            'acknowledged': ['in-progress'],
+            'in-progress': ['resolved'],
+            'resolved': [],
+        }
+        context['available_next_statuses'] = status_transitions.get(current_status, [])
+        
+        # All possible status options for dropdown
+        context['all_statuses'] = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        
+        # Category options
+        context['category_options'] = ['disaster', 'transport', 'infrastructure', 'safety', 'other']
+        
+        # Signal breakdown for urgency visualization
+        context['signal_breakdown'] = {
+            'keyword_score': random.randint(10, 100),
+            'location_score': random.randint(10, 100),
+            'time_score': random.randint(10, 100),
+            'consistency_score': random.randint(10, 100),
+        }
+        
         return context
 
 
