@@ -1,26 +1,55 @@
-# Secrets — NEVER commit
+# Secrets and local env files
 .env
+.env.*
+!.env.example
+
+# Virtual environments
+.venv/
+venv/
+env/
 
 # Machine learning model binaries — too large, rebuilt from training scripts
 ml/models/
 
-# Python bytecode
+# Python cache / build artifacts
 *.pyc
 *.pyo
+*.pyd
 __pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+.cache/
+build/
+dist/
+*.egg-info/
 
-# Local SQLite fallback database
+# Local databases
 db.sqlite3
+db.sqlite3-journal
+*.sqlite3
 
 # OS / editor noise
 .DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100/
+.Trashes/
 .idea/
 .vscode/
 *.swp
+*.swo
+*~
 
 # Collected static (generated at deploy time)
 staticfiles/
 
-# Coverage reports
+# Coverage / test output
 .coverage
+.coverage.*
 htmlcov/
+
+# Logs
+*.log

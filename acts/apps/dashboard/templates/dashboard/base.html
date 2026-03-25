@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}ACTS Demo - Dashboard{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- sidebar -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column" id="sidebar">
+            <div class="container-fluid flex-column">
+                <a class="navbar-brand mb-4" href="{% url 'dashboard:stats' %}">
+                    <span class="brand-logo">ACTS</span>
+                    <span class="brand-subtitle">Demo</span>
+                </a>
+
+                <ul class="navbar-nav flex-column w-100">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:stats' %}">
+                            <i class="bi bi-speedometer2"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:report-list' %}">
+                            <i class="bi bi-list-ul"></i>
+                            Reports
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:map' %}">
+                            <i class="bi bi-map"></i>
+                            Map
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:history' %}">
+                            <i class="bi bi-clock-history"></i>
+                            History
+                        </a>
+                    </li>
+                    <li class="nav-item mt-4 border-top pt-4">
+                        <a class="nav-link text-danger" href="{% url 'dashboard:logout' %}">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div id="main-content" class="w-100">
+            <!-- top bar -->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white py-3 sticky-top shadow-sm">
+                <div class="container-fluid px-4">
+                    <span class="navbar-brand mb-0">
+                        <h1 class="h5 fw-bold mb-0 text-dark">
+                            {% block page_title %}Dashboard{% endblock %}
+                        </h1>
+                    </span>
+
+                    <div class="ms-auto text-end">
+                        <div class="text-muted small d-none d-md-block fw-medium">
+                            <i class="bi bi-clock me-1"></i>
+                            <span id="live-date">{% now "F j, Y" %}</span>
+                            <span id="live-time" class="text-secondary opacity-75 ms-1">{% now "g:i A" %}</span>
+                        </div>
+                        <div id="live-time-mobile" class="text-muted x-small d-block d-md-none">
+                            {% now "g:i A" %}
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- page content -->
+            <main class="container-fluid p-4">
+                {% if messages %}
+                <div class="messages mb-3">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    {% block scripts %}{% endblock %}
+</body>
+
+<script>
+    function updateDashboardClock() {
+        const now = new Date();
+
+        // format: mm/dd/yy
+        const dateOptions = { month: 'long', day: 'numeric', year: 'numeric' };
+        const dateStr = now.toLocaleDateString('en-US', dateOptions);
+
+        // format: 4:24:05 AM
+        const timeOptions = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
+        const timeStr = now.toLocaleTimeString('en-US', timeOptions);
+
+        const date = document.getElementById('live-date');
+        const time = document.getElementById('live-time');
+        if (date) date.textContent = dateStr;
+        if (time) time.textContent = timeStr;
+
+        const mobileTime = document.getElementById('live-time-mobile');
+        if (mobileTime) mobileTime.textContent = timeStr;
+    }
+
+    setInterval(updateDashboardClock, 1000);
+
+    updateDashboardClock();
+</script>
+
+</html>

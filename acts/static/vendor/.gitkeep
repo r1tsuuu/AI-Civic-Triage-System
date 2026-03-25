@@ -1,0 +1,2 @@
+# Bootstrap 5, Leaflet.js, and other vendor libraries go here
+# Download these from CDN during development or add minified versions to static/vendor/

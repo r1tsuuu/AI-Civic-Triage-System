@@ -12,7 +12,7 @@ from .base import *  # noqa: F401, F403
 # ---------------------------------------------------------------------------
 SECRET_KEY = config("SECRET_KEY", default="dev-insecure-change-before-production")
 DEBUG = config("DEBUG", default=True, cast=bool)
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1,testserver", cast=Csv())
 
 # ---------------------------------------------------------------------------
 # Database  (PostgreSQL; fall back to SQLite if DATABASE_URL is unset locally)

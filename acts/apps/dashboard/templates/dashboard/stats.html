@@ -1,0 +1,132 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard - ACTS Demo{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <!-- Reports in Last 24 Hours -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Reports (24h)</div>
+                <div class="text-primary bg-primary-subtle p-2 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-file-earmark-text fs-5"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.reports_24h }}</div>
+            <div class="stat-change positive mt-2 d-flex align-items-center gap-1">
+                <i class="bi bi-arrow-up-right"></i>
+                <small class="fw-medium">From yesterday: {{ stats.reports_24h_change }}</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resolution Rate -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Resolution Rate</div>
+                <div class="text-success bg-success-subtle p-2 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-check-circle fs-5"></i>
+                </div>
+            </div>
+            <div class="stat-value">{{ stats.resolution_rate }}%</div>
+            <div class="stat-change positive mt-2 d-flex align-items-center gap-1">
+                <i class="bi bi-graph-up-arrow"></i>
+                <small class="fw-medium">Trend: {{ stats.resolution_rate_change }}%</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Most Affected Barangay -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Most Affected</div>
+                <div class="text-danger bg-danger-subtle p-2 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-geo-alt fs-5"></i>
+                </div>
+            </div>
+            <div class="stat-value fs-4 text-truncate" title="{{ stats.most_affected_barangay }}">{{ stats.most_affected_barangay }}</div>
+            <div class="stat-change mt-2">
+                <small class="fw-medium text-secondary">{{ stats.most_affected_count }} reports</small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Most Reported Category -->
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="stat-card h-100">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div class="stat-label">Top Category</div>
+                <div class="text-warning bg-warning-subtle p-2 rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-exclamation-triangle fs-5"></i>
+                </div>
+            </div>
+            <div class="stat-value fs-4 text-truncate" title="{{ stats.most_reported_category }}">{{ stats.most_reported_category }}</div>
+            <div class="stat-change mt-2">
+                <small class="fw-medium text-secondary">{{ stats.most_reported_count }} reports</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section (Placeholder for TASK-080) -->
+<div class="row">
+    <!-- Reports Over Time Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="stat-card" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <div class="text-center text-muted">
+                <p class="mb-2"><i class="bi bi-graph-up" style="font-size: 2rem;"></i></p>
+                <p class="small">Reports Over Time</p>
+                <p class="small text-secondary">(Chart placeholder - TASK-080)</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Distribution Chart -->
+    <div class="col-lg-6 mb-4">
+        <div class="stat-card" style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <div class="text-center text-muted">
+                <p class="mb-2"><i class="bi bi-pie-chart" style="font-size: 2rem;"></i></p>
+                <p class="small">Category Distribution</p>
+                <p class="small text-secondary">(Chart placeholder - TASK-080)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Distribution -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="stat-card" style="height: 250px; display: flex; align-items: center; justify-content: center;">
+            <div class="text-center text-muted">
+                <p class="mb-2"><i class="bi bi-bar-chart" style="font-size: 2rem;"></i></p>
+                <p class="small">Status Distribution</p>
+                <p class="small text-secondary">(Chart placeholder - TASK-080)</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Reports Section -->
+<div class="row">
+    <div class="col-12">
+        <h5 class="mb-3">Recent Unresolved Reports</h5>
+        <div class="stat-card">
+            <p class="text-muted text-center py-4">
+                <small>Report list preview will be shown here</small>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Chart initialization will happen in TASK-080
+    // Placeholder for Chart.js or similar charting library integration
+</script>
+{% endblock %}
