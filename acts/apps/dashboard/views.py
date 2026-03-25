@@ -447,9 +447,9 @@ class HistoryExportView(View):
                     id=f"{report.id}_{i}",
                     report_id=report.id,
                     timestamp=now - timedelta(hours=random.randint(1, 72)),
-                    from_status=statuses_export[i - 1] if i > 0 else 'reported',
-                    to_status=statuses_export[i],
-                    notes=f'Status changed to {statuses_export[i]}',
+                    from_status=statuses[i - 1] if i > 0 else 'reported',
+                    to_status=statuses[i],
+                    notes=f'Status changed to {statuses[i]}',
                     changed_by=random.choice(['System', 'Moderator', 'Auto']),
                 ))
             all_changes += all_changes_export

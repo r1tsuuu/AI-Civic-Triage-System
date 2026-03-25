@@ -267,7 +267,7 @@ class ReportDetailViewTests(TestCase):
         report = response.context['report']
         
         self.assertTrue(hasattr(report, 'current_status'))
-        valid_statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        valid_statuses = ['reported', 'acknowledged', 'in_progress', 'resolved', 'dismissed']
         self.assertIn(report.current_status, valid_statuses)
     
     def test_routing_notes_present_in_context(self):
@@ -297,7 +297,7 @@ class ReportDetailViewTests(TestCase):
         
         self.assertIn('all_statuses', response.context)
         all_statuses = response.context['all_statuses']
-        expected = ['reported', 'acknowledged', 'in-progress', 'resolved']
+        expected = ['reported', 'acknowledged', 'in_progress', 'resolved']
         self.assertEqual(all_statuses, expected)
     
     def test_category_options_in_context(self):
