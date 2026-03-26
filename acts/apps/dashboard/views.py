@@ -5,7 +5,6 @@ Dashboard Views — connected to triage.Report pipeline (Phase 2).
 from __future__ import annotations
 
 import csv
-import threading
 from typing import ClassVar
 
 from django.views.generic import TemplateView, ListView, DetailView, View
@@ -153,14 +152,8 @@ class ReportDetailView(DetailView):
             StatusChange.objects.filter(report=report).order_by('changed_at')
         )
 
-        try:
-            from apps.response.models import AutoReply
-            context['auto_reply'] = AutoReply.objects.filter(report=report).first()
-        except Exception:
-            context['auto_reply'] = None
-
         from apps.response.templates_config import get_reply_text
-        context['auto_reply_preview'] = get_reply_text(report.category)
+        context['simulated_reply_preview'] = get_reply_text(report.category)
 
         context['available_next_statuses'] = Report.VALID_TRANSITIONS.get(report.status, [])
         context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
@@ -398,10 +391,11 @@ class ResolveReportView(_BaseStatusActionView):
         except InvalidTransitionError as exc:
             messages.error(request, str(exc))
         else:
-            messages.success(request, "Report marked as resolved.")
-            # Fire auto-reply in background — a Graph API failure must not block the redirect.
-            from apps.response.sender import send_reply
-            threading.Thread(target=send_reply, args=(report,), daemon=True).start()
+            messages.success(
+                request,
+                "Success! A simulated response has been sent to the citizen's Facebook thread.",
+                extra_tags="mock-resolve",
+            )
         return redirect('dashboard:report_detail', pk=pk)
 
 

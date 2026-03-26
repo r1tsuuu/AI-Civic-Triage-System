@@ -31,6 +31,7 @@ LOCAL_APPS = [
     "apps.dashboard",
     "apps.response",
     "apps.accounts",
+    "apps.mock_fb",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
