@@ -35,174 +35,173 @@
         </div>
     </div>
 
-    <!-- Section 1: Original Post Text -->
+    <!-- Section 1: Original Post + Location Context (always visible) -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
+                <div class="card-header bg-transparent border-bottom border-light-subtle py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Original Report</h5>
+                    <span class="badge bg-secondary-subtle text-secondary">
+                        <i class="bi bi-clock me-1"></i>Received {{ report.raw_post.received_at|date:"M d, Y · g:i A" }}
+                    </span>
                 </div>
                 <div class="card-body">
                     <p class="lead" id="post-text">{{ report.raw_post.post_text }}</p>
-                    <small class="text-muted">
-                        Received {{ report.raw_post.received_at|date:"M d, Y H:i" }}
-                    </small>
+                    <div class="d-flex align-items-center gap-3 flex-wrap mt-3 pt-3 border-top">
+                        <span class="cat-badge cat-{{ report.category }}">
+                            {% if report.category == 'disaster_flooding' %}Flooding
+                            {% elif report.category == 'transportation_traffic' %}Traffic
+                            {% elif report.category == 'public_infrastructure' %}Infrastructure
+                            {% elif report.category == 'public_safety' %}Public Safety
+                            {% else %}{{ report.category|title }}{% endif %}
+                        </span>
+                        <span class="fw-semibold text-dark">
+                            <i class="bi bi-geo-alt-fill text-primary me-1"></i>{{ report.location_context }}
+                        </span>
+                        <span class="{% if report.urgency_score >= 7.5 %}text-danger fw-bold{% elif report.urgency_score >= 5 %}text-warning fw-semibold{% else %}text-success{% endif %}">
+                            Urgency {{ report.urgency_score }}/10
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar: Quick Stats -->
+        <!-- Sidebar: action summary -->
         <div class="col-md-4">
-            <div class="card mb-3">
+            <div class="card border-0 shadow-sm rounded-3 h-100">
                 <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
-                    <h6 class="mb-0">Quick Stats</h6>
+                    <h6 class="mb-0">Decision Context</h6>
                 </div>
                 <div class="card-body small">
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <strong>Urgency:</strong><br>
-                            <span class="urgency-badge {% if report.urgency_score > 70 %}critical{% elif report.urgency_score > 40 %}warning{% else %}low{% endif %}">
-                                {{ report.urgency_score }}/100
-                            </span>
-                        </div>
-                        <div class="col-6">
-                            <strong>Confidence:</strong><br>
-                            <span class="conf-badge conf-{{ report.confidence_tier }}">
-                                {{ report.confidence_pct|floatformat:0 }}%
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
-                    <h6 class="mb-0">Location</h6>
-                </div>
-                <div class="card-body small">
-                    {% if report.latitude %}
-                        <strong>{{ report.barangay }}</strong><br>
-                        <code class="coordinate-display">{{ report.latitude }}, {{ report.longitude }}</code>
-                    {% else %}
-                        <span class="text-muted">Location unresolved by NER</span>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Section 2: Classification Panel -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
-                    <h5 class="mb-0">Classification</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Category:</strong><br>
-                            <span class="category-badge {{ report.category }}">
-                                {{ report.category|upper }}
-                            </span>
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Confidence:</strong><br>
-                            <div class="confidence-progress">
-                                <div class="progress-bar
-                                     {% if report.confidence_tier == 'low' %}bg-danger
-                                     {% elif report.confidence_tier == 'medium' %}bg-warning
-                                     {% else %}bg-success{% endif %}"
-                                     role="progressbar"
-                                     data-width="{{ report.confidence_pct|floatformat:0 }}"
-                                     style="width: {{ report.confidence_pct|floatformat:0 }}%"
-                                     aria-valuenow="{{ report.confidence_pct|floatformat:0 }}"
-                                     aria-valuemin="0"
-                                     aria-valuemax="100">
-                                    {{ report.confidence_pct|floatformat:0 }}%
-                                </div>
-                            </div>
-                            {% if report.has_low_confidence %}
-                                <small class="low-confidence-warning text-danger">
-                                    ⚠ Below {{ report.confidence_threshold_pct }}% threshold — human review required
-                                </small>
+                    <dl class="row g-1 mb-0">
+                        <dt class="col-6 text-muted">Status</dt>
+                        <dd class="col-6">
+                            {% if report.status == 'for_review' %}
+                                <span class="status-pending">For Review</span>
+                            {% elif report.status == 'resolved' %}
+                                <span class="status-resolved">Resolved</span>
+                            {% elif report.status == 'in_progress' %}
+                                <span class="aq-status aq-status--progress">In Progress</span>
+                            {% elif report.status == 'acknowledged' %}
+                                <span class="aq-status aq-status--ack">Acknowledged</span>
+                            {% else %}
+                                <span class="aq-status aq-status--pending">{{ report.status|title }}</span>
                             {% endif %}
-                        </div>
-                    </div>
-
-                    <hr>
-
-                    <strong>Signal Breakdown:</strong>
-                    <div class="row small mt-2">
-                        <div class="col-md-6">
-                            <div class="signal-breakdown-item">
-                                <div class="label">
-                                    <span>Distress (+3.0):</span>
-                                    <strong>{% if signal_breakdown.distress %}+{{ signal_breakdown.distress }}{% else %}—{% endif %}</strong>
-                                </div>
-                                <div class="signal-progress">
-                                    <div class="progress-bar {% if signal_breakdown.distress %}bg-danger{% endif %}" data-width="{% if signal_breakdown.distress %}100{% else %}0{% endif %}"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="signal-breakdown-item">
-                                <div class="label">
-                                    <span>Flood Depth (+2.0):</span>
-                                    <strong>{% if signal_breakdown.flood_depth %}+{{ signal_breakdown.flood_depth }}{% else %}—{% endif %}</strong>
-                                </div>
-                                <div class="signal-progress">
-                                    <div class="progress-bar {% if signal_breakdown.flood_depth %}bg-warning{% endif %}" data-width="{% if signal_breakdown.flood_depth %}100{% else %}0{% endif %}"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="signal-breakdown-item">
-                                <div class="label">
-                                    <span>Vulnerable Persons (+2.0):</span>
-                                    <strong>{% if signal_breakdown.vulnerable %}+{{ signal_breakdown.vulnerable }}{% else %}—{% endif %}</strong>
-                                </div>
-                                <div class="signal-progress">
-                                    <div class="progress-bar {% if signal_breakdown.vulnerable %}bg-warning{% endif %}" data-width="{% if signal_breakdown.vulnerable %}100{% else %}0{% endif %}"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="signal-breakdown-item">
-                                <div class="label">
-                                    <span>Stranded (+2.0):</span>
-                                    <strong>{% if signal_breakdown.stranded %}+{{ signal_breakdown.stranded }}{% else %}—{% endif %}</strong>
-                                </div>
-                                <div class="signal-progress">
-                                    <div class="progress-bar {% if signal_breakdown.stranded %}bg-warning{% endif %}" data-width="{% if signal_breakdown.stranded %}100{% else %}0{% endif %}"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        </dd>
+                        <dt class="col-6 text-muted">Category</dt>
+                        <dd class="col-6">{{ report.category|title }}</dd>
+                        <dt class="col-6 text-muted">Urgency</dt>
+                        <dd class="col-6 fw-bold {% if report.urgency_score >= 7.5 %}text-danger{% elif report.urgency_score >= 5 %}text-warning{% else %}text-success{% endif %}">
+                            {{ report.urgency_score }}/10
+                        </dd>
+                        <dt class="col-6 text-muted">Location</dt>
+                        <dd class="col-6">{{ report.location_context }}</dd>
+                        {% if report.is_manually_corrected %}
+                        <dt class="col-6 text-muted">Training</dt>
+                        <dd class="col-6"><span class="badge bg-success">Ground-truth</span></dd>
+                        {% endif %}
+                    </dl>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Section 3: Location Panel (Map Placeholder) -->
+    <!-- Section 2: Technical Breakdown accordion (collapsed by default) -->
     <div class="row mb-4">
         <div class="col-md-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
-                    <h5 class="mb-0">Location Map</h5>
-                </div>
-                <div class="card-body p-0">
-                    {% if report.latitude %}
-                        <div id="detail-map" data-latitude="{{ report.latitude }}" data-longitude="{{ report.longitude }}" data-barangay="{{ report.barangay }}"></div>
-                    {% else %}
-                        <div class="location-placeholder">
-                            <div>
-                                <i class="bi bi-geo-alt-fill"></i>
-                                <p>Location not yet extracted</p>
-                                <small>NER pipeline will extract barangay from post text</small>
+            <div class="accordion" id="techAccordion">
+                <div class="accordion-item border-0 shadow-sm rounded-3">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed rounded-3 py-3" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#techPanel"
+                                aria-expanded="false" aria-controls="techPanel">
+                            <i class="bi bi-cpu me-2 text-secondary"></i>
+                            <span class="fw-semibold">Technical Breakdown</span>
+                            <span class="ms-2 badge bg-secondary-subtle text-secondary fw-normal">
+                                AI · Confidence · Coordinates · Signals
+                            </span>
+                        </button>
+                    </h2>
+                    <div id="techPanel" class="accordion-collapse collapse" data-bs-parent="#techAccordion">
+                        <div class="accordion-body pt-0">
+
+                            <!-- Classification -->
+                            <div class="mb-4">
+                                <p class="text-muted fw-semibold small text-uppercase mb-2">Classification</p>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <strong>Category:</strong>
+                                        <span class="cat-badge cat-{{ report.category }} ms-2">{{ report.category|upper }}</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>AI Confidence:</strong>
+                                        <div class="progress mt-1" style="height:8px;">
+                                            <div class="progress-bar {% if report.confidence_tier == 'low' %}bg-danger{% elif report.confidence_tier == 'medium' %}bg-warning{% else %}bg-success{% endif %}"
+                                                 style="width: {{ report.confidence_pct|floatformat:0 }}%"
+                                                 aria-valuenow="{{ report.confidence_pct|floatformat:0 }}"
+                                                 aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small class="text-muted">{{ report.confidence_pct|floatformat:0 }}% — tier: {{ report.confidence_tier }}</small>
+                                        {% if report.has_low_confidence %}
+                                            <div class="text-danger small mt-1">
+                                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                Below {{ report.confidence_threshold_pct }}% threshold — human review required
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </div>
+
+                            <!-- Signal Breakdown -->
+                            <div class="mb-4">
+                                <p class="text-muted fw-semibold small text-uppercase mb-2">Signal Breakdown</p>
+                                <div class="row small">
+                                    <div class="col-6">
+                                        <span>Distress (+3.0):</span>
+                                        <strong class="ms-1">{% if signal_breakdown.distress %}+{{ signal_breakdown.distress }}{% else %}—{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <span>Flood Depth (+2.0):</span>
+                                        <strong class="ms-1">{% if signal_breakdown.flood_depth %}+{{ signal_breakdown.flood_depth }}{% else %}—{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6 mt-1">
+                                        <span>Vulnerable Persons (+2.0):</span>
+                                        <strong class="ms-1">{% if signal_breakdown.vulnerable %}+{{ signal_breakdown.vulnerable }}{% else %}—{% endif %}</strong>
+                                    </div>
+                                    <div class="col-6 mt-1">
+                                        <span>Stranded (+2.0):</span>
+                                        <strong class="ms-1">{% if signal_breakdown.stranded %}+{{ signal_breakdown.stranded }}{% else %}—{% endif %}</strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Coordinates + Location Map -->
+                            <div class="mb-4">
+                                <p class="text-muted fw-semibold small text-uppercase mb-2">Coordinates &amp; Map</p>
+                                {% if report.latitude %}
+                                    <p class="small mb-2">
+                                        <strong>{{ report.barangay }}</strong>
+                                        &nbsp;&mdash;&nbsp;
+                                        <code>{{ report.latitude }}, {{ report.longitude }}</code>
+                                    </p>
+                                    <div id="detail-map"
+                                         data-latitude="{{ report.latitude }}"
+                                         data-longitude="{{ report.longitude }}"
+                                         data-barangay="{{ report.barangay }}"
+                                         style="height:220px;border-radius:8px;border:1px solid #e2e8f0;"></div>
+                                {% else %}
+                                    <p class="text-muted small"><i class="bi bi-geo-slash me-1"></i>Location not resolved by NER pipeline.</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Processing / Routing Notes log -->
+                            <div>
+                                <p class="text-muted fw-semibold small text-uppercase mb-2">Processing Log (Routing Notes)</p>
+                                <pre class="bg-light rounded p-2 small text-muted" style="white-space:pre-wrap;max-height:120px;overflow-y:auto;">{% if report.routing_notes %}{{ report.routing_notes }}{% else %}No routing notes recorded.{% endif %}</pre>
+                            </div>
+
                         </div>
-                    {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
@@ -540,31 +539,32 @@
 {% block scripts %}
 <script src="{% static 'js/report_detail.js' %}"></script>
 <script>
-    // Initialize map if coordinates available (needs Leaflet.js from base template)
-    document.addEventListener('DOMContentLoaded', function() {
-        const mapElement = document.getElementById('detail-map');
-        if (!mapElement) return;
-        
-        const latitude = parseFloat(mapElement.getAttribute('data-latitude'));
-        const longitude = parseFloat(mapElement.getAttribute('data-longitude'));
-        const barangay = mapElement.getAttribute('data-barangay');
-        
-        if (isNaN(latitude) || isNaN(longitude)) return;
-        
-        const detailMap = L.map('detail-map').setView([latitude, longitude], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        }).addTo(detailMap);
-        L.circleMarker([latitude, longitude], {
-            radius: 8,
-            fillColor: '#1A56DB',
-            color: '#fff',
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8,
-            popup: barangay
-        }).addTo(detailMap).bindPopup('Reported incident');
-    });
+    // Map lives inside the Technical Breakdown accordion — init on first open
+    // so Leaflet sees a rendered container with real dimensions.
+    (function () {
+        let mapInitialised = false;
+        const panel = document.getElementById('techPanel');
+        if (!panel) return;
+
+        panel.addEventListener('shown.bs.collapse', function () {
+            if (mapInitialised) return;
+            const el = document.getElementById('detail-map');
+            if (!el) return;
+            const lat = parseFloat(el.dataset.latitude);
+            const lng = parseFloat(el.dataset.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            const m = L.map('detail-map').setView([lat, lng], 14);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(m);
+            L.circleMarker([lat, lng], {
+                radius: 9, fillColor: '#1A56DB', color: '#fff',
+                weight: 2, opacity: 1, fillOpacity: 0.85
+            }).addTo(m).bindPopup(el.dataset.barangay || 'Reported incident').openPopup();
+            mapInitialised = true;
+        });
+    }());
 </script>
 {% endblock %}

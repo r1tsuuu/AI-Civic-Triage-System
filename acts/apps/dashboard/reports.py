@@ -16,6 +16,69 @@ from apps.triage.models import Report, StatusChange, CorrectionLog
 from apps.triage.exceptions import InvalidTransitionError
 from apps.triage.constants import ALL_CATEGORIES, ALL_STATUSES
 
+_STALE_HOURS = 4
+_UNASSIGNED_STATUSES = {'for_review', 'reported'}
+
+
+def _format_elapsed(total_seconds: int) -> str:
+    """Return a human-readable elapsed time string (e.g. '2h 15m ago')."""
+    if total_seconds < 60:
+        return f"{total_seconds}s ago"
+    minutes = total_seconds // 60
+    if minutes < 60:
+        return f"{minutes}m ago"
+    hours = minutes // 60
+    rem = minutes % 60
+    if hours < 24:
+        return f"{hours}h {rem}m ago" if rem else f"{hours}h ago"
+    return f"{hours // 24}d ago"
+
+
+def _deduplicate_and_annotate(qs) -> list:
+    """
+    Pull the queryset into Python, cluster by (category, ~1 km grid),
+    keep the highest-urgency report per cluster, and attach display
+    attributes to every primary report:
+      .duplicate_count  — how many additional reports share the cluster
+      .time_elapsed     — "2h 15m ago" string
+      .is_stale         — True when unassigned > STALE_HOURS
+      .confidence       — alias for classifier_confidence (template convenience)
+    """
+    now = timezone.now()
+    seen: dict = {}
+    primaries: list = []
+
+    for report in qs:
+        # ── display helpers ──────────────────────────────────────────────
+        report.confidence = report.classifier_confidence
+        delta = now - report.created_at
+        total_sec = int(delta.total_seconds())
+        report.time_elapsed = _format_elapsed(total_sec)
+        report.is_stale = (
+            report.status in _UNASSIGNED_STATUSES
+            and total_sec > _STALE_HOURS * 3600
+        )
+
+        # ── deduplication cluster ────────────────────────────────────────
+        if report.latitude and report.longitude:
+            cluster = (
+                report.category,
+                round(report.latitude, 2),
+                round(report.longitude, 2),
+            )
+        else:
+            cluster = None
+
+        if cluster and cluster in seen:
+            seen[cluster].duplicate_count += 1
+        else:
+            report.duplicate_count = 0
+            if cluster:
+                seen[cluster] = report
+            primaries.append(report)
+
+    return primaries
+
 
 class ReportListView(ListView):
     model = Report
@@ -49,15 +112,13 @@ class ReportListView(ListView):
                 qs = qs.filter(created_at__lt=to_date)
             except (ValueError, AttributeError):
                 pass
-        return qs
+
+        # Return a plain list so ListView's Paginator (which accepts any
+        # sequence) can page over the deduplicated, annotated result.
+        return _deduplicate_and_annotate(qs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        for report in context['reports']:
-            # confidence is a template alias; confidence_pct and confidence_tier
-            # are already model properties — no need to reassign them.
-            report.confidence = report.classifier_confidence
-
         context['category_filter'] = self.request.GET.get('category', '')
         context['status_filter'] = self.request.GET.get('status', '')
         context['barangay_filter'] = self.request.GET.get('barangay', '')

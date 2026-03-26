@@ -37,6 +37,11 @@ class Report(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
+    def location_context(self):
+        """Single display string: 'Barangay — Landmark' for the action queue."""
+        return self.location_text or "Location not identified"
+
+    @property
     def confidence_pct(self):
         """Classifier confidence as a 0–100 float for display."""
         return round(self.classifier_confidence * 100, 1)

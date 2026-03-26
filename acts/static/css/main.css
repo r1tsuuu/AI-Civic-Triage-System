@@ -1085,3 +1085,187 @@ body {
         text-align: center;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ACTION QUEUE — Compact card system (spec: 10-12 rows visible per screen)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.x-small { font-size: 0.72rem; }
+
+/* ── Card shell ─────────────────────────────────────────────────────────── */
+.aq-card {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    padding: 0.55rem 0.9rem;
+    margin-bottom: 0.35rem;
+    transition: box-shadow 0.15s ease;
+}
+.aq-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.aq-card--emergency {
+    border-left: 3px solid var(--acts-red);
+}
+.aq-card--low-conf {
+    background-color: #FFFBEB;
+}
+
+/* ── Row layout ─────────────────────────────────────────────────────────── */
+.aq-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.aq-row--top {
+    margin-bottom: 0.2rem;
+}
+.aq-row--footer {
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px solid #F1F5F9;
+}
+
+/* ── Left cluster (category · location · trending) ──────────────────────── */
+.aq-left {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1;
+}
+.aq-location {
+    font-weight: 600;
+    color: #1A202C;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 300px;
+}
+
+/* ── Right cluster (time · urgency) ─────────────────────────────────────── */
+.aq-right {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* ── Time elapsed ───────────────────────────────────────────────────────── */
+.aq-time {
+    font-size: 0.78rem;
+    color: #718096;
+    white-space: nowrap;
+}
+.aq-time--stale {
+    color: #DC2626;
+    font-weight: 700;
+}
+
+/* ── Urgency score ──────────────────────────────────────────────────────── */
+.aq-urgency {
+    font-size: 0.92rem;
+    font-weight: 800;
+    white-space: nowrap;
+    letter-spacing: -0.5px;
+}
+.aq-urgency-denom {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: #718096;
+}
+.aq-urgency--critical { color: #DC2626; }
+.aq-urgency--warning  { color: #D97706; }
+.aq-urgency--low      { color: #16A34A; }
+
+/* ── Post summary (one line, truncated) ─────────────────────────────────── */
+.aq-summary {
+    font-size: 0.81rem;
+    color: #64748B;
+    margin: 0.15rem 0 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+/* ── Trending badge ─────────────────────────────────────────────────────── */
+.aq-trending {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.1rem 0.5rem;
+    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    color: #ffffff;
+    border-radius: 9rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+/* ── Compact status badges ──────────────────────────────────────────────── */
+.aq-status {
+    display: inline-block;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.2rem;
+    font-size: 0.70rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.aq-status--pending  { background: #FEF3C7; color: #78350F; border: 1px solid #FCD34D; }
+.aq-status--resolved { background: #16A34A; color: #fff;    border: 1px solid #16A34A; }
+.aq-status--ack      { background: rgba(245,158,11,0.15); color: #B45309; border: 1px solid #F59E0B; }
+.aq-status--progress { background: rgba(139,92,246,0.12);  color: #6D28D9; border: 1px solid #8B5CF6; }
+.aq-status--dismissed{ background: #F3F4F6; color: #6B7280; border: 1px solid #D1D5DB; }
+
+/* ── Tech details button ────────────────────────────────────────────────── */
+.aq-tech-btn {
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    color: #94A3B8;
+    border-color: #E2E8F0;
+    line-height: 1.4;
+}
+.aq-tech-btn:hover,
+.aq-tech-btn[aria-expanded="true"] {
+    color: var(--acts-blue);
+    border-color: var(--acts-blue);
+    background: rgba(37,99,235,0.05);
+}
+
+/* ── Technical breakdown panel ──────────────────────────────────────────── */
+.aq-tech {
+    background: #F8FAFC;
+    border-top: 1px dashed #E2E8F0;
+    border-radius: 0 0 5px 5px;
+    padding: 0.6rem 0.75rem 0.5rem;
+    margin-top: 0.35rem;
+}
+.aq-tech-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #94A3B8;
+    margin-bottom: 0.2rem;
+}
+.aq-tech-value {
+    font-size: 0.80rem;
+    color: #334155;
+    line-height: 1.45;
+}
+
+/* ── Mobile: stack footer row ───────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .aq-card { padding: 0.5rem 0.75rem; }
+    .aq-row--footer { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+    .aq-row--footer > div:last-child { width: 100%; justify-content: flex-end; }
+    .aq-location { max-width: 180px; }
+}

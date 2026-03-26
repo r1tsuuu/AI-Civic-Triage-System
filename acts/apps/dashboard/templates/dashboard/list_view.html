@@ -1,30 +1,34 @@
 {% extends 'dashboard/base.html' %}
 
-{% block title %}Reports - ACTS Demo{% endblock %}
+{% block title %}Reports Queue - ACTS Demo{% endblock %}
 
-{% block page_title %}Reports{% endblock %}
+{% block page_title %}Reports Queue{% endblock %}
 
 {% block content %}
-<!-- filter bar -->
-<div class="card shadow-sm border-0 mb-4 rounded-3">
-    <div class="card-body">
+<!-- ── Filter bar ────────────────────────────────────────────────────────── -->
+<div class="card shadow-sm border-0 mb-3 rounded-3">
+    <div class="card-body py-2 px-3">
         <form method="get" id="filter-form">
-            <div class="row g-3">
-                <div class="col-md-4 col-lg-2">
-                    <label for="category" class="form-label text-secondary fw-semibold small text-uppercase mb-1">Category</label>
-                    <select id="category" name="category" class="form-select border-light-subtle">
+            <div class="row g-2 align-items-end">
+                <div class="col-6 col-md-2">
+                    <label for="category" class="form-label text-secondary fw-semibold x-small text-uppercase mb-1">Category</label>
+                    <select id="category" name="category" class="form-select form-select-sm">
                         <option value="">All Categories</option>
                         {% for category in category_options %}
                             <option value="{{ category }}" {% if category_filter == category %}selected{% endif %}>
-                                {{ category|title }}
+                                {% if category == 'disaster_flooding' %}Flooding
+                                {% elif category == 'transportation_traffic' %}Traffic
+                                {% elif category == 'public_infrastructure' %}Infrastructure
+                                {% elif category == 'public_safety' %}Public Safety
+                                {% else %}{{ category|title }}{% endif %}
                             </option>
                         {% endfor %}
                     </select>
                 </div>
-                
-                <div class="col-md-4 col-lg-2">
-                    <label for="status" class="form-label text-secondary fw-semibold small text-uppercase mb-1">Status</label>
-                    <select id="status" name="status" class="form-select border-light-subtle">
+
+                <div class="col-6 col-md-2">
+                    <label for="status" class="form-label text-secondary fw-semibold x-small text-uppercase mb-1">Status</label>
+                    <select id="status" name="status" class="form-select form-select-sm">
                         <option value="">All Statuses</option>
                         {% for status in status_options %}
                             <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>
@@ -33,10 +37,10 @@
                         {% endfor %}
                     </select>
                 </div>
-                
-                <div class="col-md-4 col-lg-2">
-                    <label for="barangay" class="form-label text-secondary fw-semibold small text-uppercase mb-1">Barangay</label>
-                    <select id="barangay" name="barangay" class="form-select border-light-subtle">
+
+                <div class="col-6 col-md-2">
+                    <label for="barangay" class="form-label text-secondary fw-semibold x-small text-uppercase mb-1">Barangay</label>
+                    <select id="barangay" name="barangay" class="form-select form-select-sm">
                         <option value="">All Barangays</option>
                         {% for barangay in barangay_options %}
                             <option value="{{ barangay }}" {% if barangay_filter == barangay %}selected{% endif %}>
@@ -45,136 +49,180 @@
                         {% endfor %}
                     </select>
                 </div>
-                
-                <div class="col-md-4 col-lg-2">
-                    <label for="sort" class="form-label text-secondary fw-semibold small text-uppercase mb-1">Sort By</label>
-                    <select id="sort" name="sort" class="form-select border-light-subtle">
-                        {% for sort_val, sort_label in sort_options %}
-                            <option value="{{ sort_val }}">{{ sort_label }}</option>
-                        {% endfor %}
-                    </select>
+
+                <div class="col-6 col-md-2">
+                    <label for="date_from" class="form-label text-secondary fw-semibold x-small text-uppercase mb-1">From</label>
+                    <input type="date" id="date_from" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
                 </div>
 
-                <div class="col-md-4 col-lg-2">
-                    <label for="date_from" class="form-label text-secondary fw-semibold small text-uppercase mb-1">From Date</label>
-                    <input type="date" id="date_from" name="date_from" class="form-control border-light-subtle" value="{{ date_from }}">
+                <div class="col-6 col-md-2">
+                    <label for="date_to" class="form-label text-secondary fw-semibold x-small text-uppercase mb-1">To</label>
+                    <input type="date" id="date_to" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
                 </div>
-                
-                <div class="col-md-4 col-lg-2">
-                    <label for="date_to" class="form-label text-secondary fw-semibold small text-uppercase mb-1">To Date</label>
-                    <input type="date" id="date_to" name="date_to" class="form-control border-light-subtle" value="{{ date_to }}">
+
+                <div class="col-6 col-md-2 d-flex gap-1">
+                    <a href="{% url 'dashboard:report_list' %}" class="btn btn-outline-secondary btn-sm flex-fill">Clear</a>
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">Filter</button>
                 </div>
-            </div>
-            <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top border-light-subtle">
-                <a href="{% url 'dashboard:report_list' %}" class="btn btn-outline-secondary btn-sm px-3">Clear</a>
-                <button type="submit" class="btn btn-primary btn-sm px-3">Filter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- report count -->
-<div class="mb-3">
+<!-- ── Report count ──────────────────────────────────────────────────────── -->
+<div class="d-flex align-items-center justify-content-between mb-2 px-1">
     <small class="text-muted">
-        Showing {{ reports|length }} report(s)
+        <strong>{{ page_obj.paginator.count }}</strong> report{% if page_obj.paginator.count != 1 %}s{% endif %}
         {% if category_filter or status_filter or barangay_filter or date_from or date_to %}
-            (filtered)
+        (filtered)
         {% endif %}
+    </small>
+    <small class="text-muted x-small">
+        <i class="bi bi-info-circle me-1"></i>Nearby reports of the same type are grouped as trending
     </small>
 </div>
 
-<!-- ── Report Cards ─────────────────────────────────────────────────────── -->
+<!-- ══ ACTION QUEUE ═══════════════════════════════════════════════════════ -->
 {% if reports %}
     {% for report in reports %}
-    <article class="report-card{% if report.urgency_score >= 7.5 %} report-card--emergency{% endif %}{% if report.has_low_confidence %} report-card--low-conf{% endif %}"
-             role="article"
-             aria-label="Report {{ report.id|stringformat:'s'|slice:':8' }}">
+    {# ── Unique ID fragment for collapse targets ──────────────────── #}
+    {% with rid=report.id|stringformat:"s"|slice:":8" %}
+    <article class="aq-card{% if report.urgency_score >= 7.5 %} aq-card--emergency{% endif %}{% if report.has_low_confidence %} aq-card--low-conf{% endif %}"
+             role="article">
 
-        {# ── Top row: status badge (left) + urgency score (right) ─────── #}
-        <div class="report-card__top">
+        {# ── Row 1: Category · Location Context · Time · Urgency ─── #}
+        <div class="aq-row aq-row--top">
+            <div class="aq-left">
+                {# Category pill — primary identity signal #}
+                <span class="cat-badge cat-{{ report.category }}" style="font-size:0.73rem;">
+                    {% if report.category == 'disaster_flooding' %}
+                        <i class="bi bi-droplet-fill me-1"></i>Flooding
+                    {% elif report.category == 'transportation_traffic' %}
+                        <i class="bi bi-car-front me-1"></i>Traffic
+                    {% elif report.category == 'public_infrastructure' %}
+                        <i class="bi bi-cone-striped me-1"></i>Infrastructure
+                    {% elif report.category == 'public_safety' %}
+                        <i class="bi bi-shield-exclamation me-1"></i>Safety
+                    {% else %}
+                        {{ report.category|title }}
+                    {% endif %}
+                </span>
+
+                {# Location Context — single merged field #}
+                <span class="aq-location">
+                    <i class="bi bi-geo-alt-fill text-primary" style="font-size:0.72rem;"></i>
+                    {{ report.location_context }}
+                </span>
+
+                {# Trending badge (duplicate cluster) #}
+                {% if report.duplicate_count > 0 %}
+                <span class="aq-trending" title="{{ report.duplicate_count }} similar nearby report{{ report.duplicate_count|pluralize }}">
+                    <i class="bi bi-fire"></i>&nbsp;x{{ report.duplicate_count|add:1 }} Reports
+                </span>
+                {% endif %}
+            </div>
+
+            <div class="aq-right">
+                {# Time elapsed — red if stale (unassigned > 4h) #}
+                <span class="aq-time{% if report.is_stale %} aq-time--stale{% endif %}"
+                      title="{% if report.is_stale %}⚠ Unassigned for over 4 hours{% endif %}">
+                    <i class="bi bi-clock{% if report.is_stale %}-fill{% endif %}"></i>
+                    {{ report.time_elapsed }}{% if report.is_stale %} ⚠{% endif %}
+                </span>
+
+                {# Urgency score — dominant number #}
+                <span class="aq-urgency {% if report.urgency_score >= 7.5 %}aq-urgency--critical{% elif report.urgency_score >= 5.0 %}aq-urgency--warning{% else %}aq-urgency--low{% endif %}">
+                    {{ report.urgency_score }}<span class="aq-urgency-denom">/10</span>
+                </span>
+            </div>
+        </div>
+
+        {# ── Row 2: 100-char post summary ──────────────────────────── #}
+        <p class="aq-summary">{{ report.raw_post.post_text|truncatechars:100 }}</p>
+
+        {# ── Row 3: Status · Flags · Tech toggle · Review button ──── #}
+        <div class="aq-row aq-row--footer">
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                {# Semantic status badge #}
+                {# Status badge #}
                 {% if report.status == 'resolved' %}
-                    <span class="status-resolved">
-                        <i class="bi bi-check-circle-fill me-1"></i>Resolved
-                    </span>
+                    <span class="aq-status aq-status--resolved"><i class="bi bi-check-circle-fill"></i> Resolved</span>
                 {% elif report.status == 'dismissed' %}
-                    <span class="status-badge dismissed">Dismissed</span>
+                    <span class="aq-status aq-status--dismissed">Dismissed</span>
                 {% elif report.status == 'for_review' %}
-                    <span class="status-pending">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>For Review
-                    </span>
+                    <span class="aq-status aq-status--pending"><i class="bi bi-exclamation-triangle-fill"></i> For Review</span>
                 {% elif report.status == 'reported' %}
-                    <span class="status-pending">Pending</span>
+                    <span class="aq-status aq-status--pending">Pending</span>
                 {% elif report.status == 'acknowledged' %}
-                    <span class="status-badge acknowledged">Acknowledged</span>
+                    <span class="aq-status aq-status--ack">Acknowledged</span>
                 {% elif report.status == 'in_progress' %}
-                    <span class="status-badge in-progress">In Progress</span>
-                {% else %}
-                    <span class="status-badge">{{ report.status|title }}</span>
+                    <span class="aq-status aq-status--progress">In Progress</span>
                 {% endif %}
 
-                {# Low-confidence flag #}
+                {# Low-confidence warning #}
                 {% if report.has_low_confidence %}
-                    <span class="low-confidence-tag" title="AI confidence below threshold — needs review">
-                        Low Confidence
+                    <span class="low-confidence-tag" style="font-size:0.68rem;padding:0.1rem 0.4rem;">
+                        Low AI Confidence
                     </span>
                 {% endif %}
             </div>
 
-            {# Urgency score + mini bar #}
-            <div class="report-card__urgency">
-                <span class="report-card__urgency-label">Urgency</span>
-                <span class="{% if report.urgency_score >= 7.5 %}text-danger{% elif report.urgency_score >= 5.0 %}text-warning{% else %}text-success{% endif %}">
-                    {{ report.urgency_score }}<span class="text-muted fw-normal">/10</span>
-                </span>
-                <div class="urgency-bar" title="Urgency: {{ report.urgency_score }}/10">
-                    <div class="urgency-fill {% if report.urgency_score >= 7.5 %}critical{% elif report.urgency_score >= 5.0 %}warning{% else %}low{% endif %}"
-                         style="width: {{ report.urgency_score|floatformat:0 }}0%"></div>
+            <div class="d-flex align-items-center gap-2">
+                {# Technical breakdown toggle #}
+                <button class="btn btn-sm btn-outline-secondary aq-tech-btn"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#tech-{{ rid }}"
+                        aria-expanded="false"
+                        title="Technical breakdown">
+                    <i class="bi bi-code-slash"></i>
+                </button>
+
+                {# Primary CTA #}
+                <a href="{% url 'dashboard:report_detail' report.id %}"
+                   class="btn btn-sm btn-primary px-3">
+                    Review <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        {# ── Technical Breakdown (hidden by default) ────────────────── #}
+        <div class="collapse" id="tech-{{ rid }}">
+            <div class="aq-tech">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <p class="aq-tech-label">Full Post Text</p>
+                        <p class="aq-tech-value mb-0">{{ report.raw_post.post_text }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="aq-tech-label">AI Confidence</p>
+                        <span class="conf-badge conf-{{ report.confidence_tier }}">
+                            {{ report.confidence_pct|floatformat:0 }}%
+                        </span>
+                        <p class="x-small text-muted mt-1 mb-0">Tier: {{ report.confidence_tier }}</p>
+                    </div>
+                    <div class="col-md-2">
+                        <p class="aq-tech-label">Coordinates</p>
+                        {% if report.latitude %}
+                            <code class="x-small">{{ report.latitude|floatformat:4 }},<br>{{ report.longitude|floatformat:4 }}</code>
+                        {% else %}
+                            <span class="text-muted x-small">Not resolved</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        <p class="aq-tech-label">Report ID</p>
+                        <code class="x-small">{{ report.id }}</code>
+                        {% if report.is_manually_corrected %}
+                        <span class="badge bg-success d-block mt-1" style="font-size:0.65rem;">Ground-truth</span>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
 
-        {# ── Middle: bold location heading ────────────────────────────── #}
-        <h2 class="report-card__location h6">
-            <i class="bi bi-geo-alt-fill text-primary"></i>
-            {{ report.location_text|default:"Location not identified" }}
-        </h2>
-
-        {# ── Category + confidence meta ────────────────────────────────── #}
-        <div class="report-card__meta">
-            <span class="cat-badge cat-{{ report.category }}">
-                {% if report.category == 'disaster_flooding' %}Flooding
-                {% elif report.category == 'transportation_traffic' %}Traffic
-                {% elif report.category == 'public_infrastructure' %}Infrastructure
-                {% elif report.category == 'public_safety' %}Public Safety
-                {% else %}{{ report.category|title }}
-                {% endif %}
-            </span>
-            <span class="conf-badge conf-{{ report.confidence_tier }}"
-                  title="Classifier confidence: {{ report.confidence_pct }}%">
-                {{ report.confidence_pct|floatformat:0 }}% confidence
-            </span>
-        </div>
-
-        {# ── Body: post text preview (3-line clamp) ───────────────────── #}
-        <p class="report-card__preview">{{ report.raw_post.post_text|truncatechars:200 }}</p>
-
-        {# ── Footer: timestamp + action button ────────────────────────── #}
-        <div class="report-card__footer">
-            <div>
-                <span class="report-card__id">ID&nbsp;{{ report.id|stringformat:"s"|slice:":8" }}</span>
-                <span class="text-muted small ms-3">
-                    <i class="bi bi-clock me-1"></i>{{ report.raw_post.received_at|date:"M d, Y · g:i A" }}
-                </span>
-            </div>
-            <a href="{% url 'dashboard:report_detail' report.id %}"
-               class="btn btn-sm btn-primary px-3 rounded-pill">
-                Review <i class="bi bi-arrow-right ms-1"></i>
-            </a>
-        </div>
     </article>
+    {% endwith %}
     {% endfor %}
+
 {% else %}
     <div class="text-center py-5">
         <i class="bi bi-inbox text-muted" style="font-size: 2.5rem;"></i>
@@ -183,45 +231,33 @@
 {% endif %}
 
 {% if is_paginated %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
+    <nav aria-label="Page navigation" class="mt-3">
+        <ul class="pagination pagination-sm justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}&lt">
-                        First
-                    </a>
+                    <a class="page-link" href="?page=1{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}">First</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
-                        Previous
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}">Prev</a>
                 </li>
             {% endif %}
-            
+
             {% for num in page_obj.paginator.page_range %}
                 {% if page_obj.number == num %}
-                    <li class="page-item active">
-                        <span class="page-link">{{ num }}</span>
-                    </li>
-                {% else %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
-                            {{ num }}
-                        </a>
+                        <a class="page-link" href="?page={{ num }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
-            
+
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
-                        Next
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}">Next</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">
-                        Last
-                    </a>
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}">Last</a>
                 </li>
             {% endif %}
         </ul>
@@ -232,11 +268,9 @@
 
 {% block scripts %}
 <script>
-    // Auto-submit filters when they change
     document.getElementById('filter-form').addEventListener('change', function(e) {
-        if (e.target.name === 'category' || e.target.name === 'status' || e.target.name === 'barangay' || e.target.name === 'sort') {
-            this.submit();
-        }
+        const autoSubmit = ['category', 'status', 'barangay'];
+        if (autoSubmit.includes(e.target.name)) this.submit();
     });
 </script>
 {% endblock %}
