@@ -18,14 +18,32 @@ barangays = {
 }
 
 # ── Gazetteer CSV ────────────────────────────────────────────────────────────
+# Landmarks from CONSTITUTION.md §16 — canonical names that the alias map resolves to
+landmarks = {
+    "De La Salle Lipa":                          (13.9544, 121.1631),
+    "Metropolitan Cathedral of San Sebastian":   (13.9422, 121.1635),
+    "SM City Lipa":                              (13.9297, 121.1703),
+    "Robinsons Place Lipa":                      (13.9384, 121.1676),
+    "Bigben Commercial Center":                  (13.9411, 121.1624),
+    "Lipa City Public Market":                   (13.9437, 121.1618),
+    "Lipa City Hall":                            (13.9420, 121.1628),
+    "Lipa City Sports Complex":                  (13.9382, 121.1543),
+    "Mabini Shrine":                             (13.9489, 121.1604),
+    "Ospital ng Lipa":                           (13.9359, 121.1692),
+    "Lipa City Fire Station":                    (13.9428, 121.1631),
+    "Lipa City Police Station":                  (13.9425, 121.1629),
+}
+
 gazetteer_path = os.path.join(BASE_DIR, "gazetteer.csv")
 with open(gazetteer_path, "w", newline="", encoding="utf-8") as f:
     writer = csv.writer(f)
     writer.writerow(["location_name", "latitude", "longitude"])
-    for b, coords in barangays.items():
-        writer.writerow([b, coords[0], coords[1]])
+    for name, coords in barangays.items():
+        writer.writerow([name, coords[0], coords[1]])
+    for name, coords in landmarks.items():
+        writer.writerow([name, coords[0], coords[1]])
 
-print(f"Gazetteer written to {gazetteer_path}")
+print(f"Gazetteer written to {gazetteer_path} ({len(barangays)} barangays + {len(landmarks)} landmarks)")
 
 # ── Seed training data ────────────────────────────────────────────────────────
 templates = {

@@ -270,35 +270,50 @@ class MapView(TemplateView):
 class ReportsGeoJSONView(View):
     def get(self, request):
         features = []
-        qs = Report.objects.filter(
-            latitude__isnull=False,
-            longitude__isnull=False,
-        ).select_related('raw_post')
-        for r in qs:
-            features.append({
-                'type': 'Feature',
-                'geometry': {
-                    'type': 'Point',
-                    'coordinates': [r.longitude, r.latitude],
-                },
-                'properties': {
+        unresolved = []
+        for r in Report.objects.select_related('raw_post'):
+            preview = r.raw_post.post_text[:120] if r.raw_post else ''
+            if r.latitude is not None and r.longitude is not None:
+                features.append({
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'Point',
+                        'coordinates': [r.longitude, r.latitude],
+                    },
+                    'properties': {
+                        'id': str(r.id),
+                        'lat': r.latitude,
+                        'lng': r.longitude,
+                        'category': r.category,
+                        'urgency_score': r.urgency_score,
+                        'status': r.status,
+                        'message_preview': preview,
+                    },
+                })
+            else:
+                unresolved.append({
                     'id': str(r.id),
-                    'lat': r.latitude,
-                    'lng': r.longitude,
                     'category': r.category,
                     'urgency_score': r.urgency_score,
                     'status': r.status,
-                    'post_text': r.raw_post.post_text[:120] if r.raw_post else '',
-                },
-            })
-        return JsonResponse({'type': 'FeatureCollection', 'features': features})
+                    'message_preview': preview,
+                })
+        return JsonResponse({
+            'type': 'FeatureCollection',
+            'features': features,
+            'unresolved': unresolved,
+        })
 
 
 class StatsDataView(View):
     def get(self, request):
         try:
+            now = timezone.now()
+            seven_days_ago = now - timedelta(days=7)
+
             cat_qs = (
                 Report.objects
+                .filter(created_at__gte=seven_days_ago)
                 .values('category')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:5]
@@ -309,6 +324,7 @@ class StatsDataView(View):
 
             loc_qs = (
                 Report.objects
+                .filter(created_at__gte=seven_days_ago)
                 .exclude(location_text__isnull=True)
                 .exclude(location_text='')
                 .values('location_text')
@@ -319,7 +335,7 @@ class StatsDataView(View):
                 {'barangay': row['location_text'], 'count': row['count']} for row in loc_qs
             ]
 
-            avg_minutes = None
+            avg_hours = None
             resolved_changes = StatusChange.objects.filter(
                 to_status='resolved'
             ).select_related('report')
@@ -327,22 +343,22 @@ class StatsDataView(View):
             for sc in resolved_changes:
                 if sc.report.created_at:
                     durations.append(
-                        (sc.changed_at - sc.report.created_at).total_seconds() / 60
+                        (sc.changed_at - sc.report.created_at).total_seconds() / 3600
                     )
             if durations:
-                avg_minutes = round(sum(durations) / len(durations), 1)
+                avg_hours = round(sum(durations) / len(durations), 1)
 
             return JsonResponse({
                 'top_categories': top_categories,
                 'top_barangays': top_barangays,
-                'avg_resolution_minutes': avg_minutes,
+                'avg_resolution_hours': avg_hours,
             })
         except Exception as exc:
             return JsonResponse({
                 'error': str(exc),
                 'top_categories': [],
                 'top_barangays': [],
-                'avg_resolution_minutes': None,
+                'avg_resolution_hours': None,
             })
 
 
