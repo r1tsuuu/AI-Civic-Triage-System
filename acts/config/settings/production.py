@@ -57,7 +57,7 @@ MIDDLEWARE = [
          "django.middleware.security.SecurityMiddleware",
      )]
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 # ---------------------------------------------------------------------------
 # Meta / Facebook
