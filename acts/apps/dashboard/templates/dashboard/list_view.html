@@ -66,7 +66,7 @@
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top border-light-subtle">
-                <a href="{% url 'dashboard:report-list' %}" class="btn btn-outline-secondary btn-sm px-3">Clear</a>
+                <a href="{% url 'dashboard:report_list' %}" class="btn btn-outline-secondary btn-sm px-3">Clear</a>
                 <button type="submit" class="btn btn-primary btn-sm px-3">Filter</button>
             </div>
         </form>
@@ -103,7 +103,7 @@
                     {% for report in reports %}
                         <tr {% if report.has_low_confidence %}class="table-warning bg-opacity-10"{% endif %}>
                             <td>
-                                <code class="text-dark bg-secondary bg-opacity-10 px-2 py-1 rounded">{{ report.facebook_post_id|truncatechars:12 }}</code>
+                                <code class="text-dark bg-secondary bg-opacity-10 px-2 py-1 rounded">{{ report.id|stringformat:"s"|slice:":8" }}</code>
                                 {% if report.has_low_confidence %}
                                     <div class="mt-1">
                                         <span class="badge bg-warning text-dark border border-warning"><i class="bi bi-exclamation-triangle me-1"></i>Low Confidence</span>
@@ -124,11 +124,11 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="text-secondary">{{ report.barangay }}</span>
+                                <span class="text-secondary">{{ report.location_text|default:"—" }}</span>
                             </td>
                             <td>
                                 <span class="text-secondary small">
-                                    {{ report.received_at|date:"M d, Y H:i" }}
+                                    {{ report.raw_post.received_at|date:"M d, Y H:i" }}
                                 </span>
                             </td>
                             <td>
@@ -137,7 +137,7 @@
                                 </span>
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'dashboard:report-detail' report.id %}" class="btn btn-sm btn-primary px-3 rounded-pill">
+                                <a href="{% url 'dashboard:report_detail' report.id %}" class="btn btn-sm btn-primary px-3 rounded-pill">
                                     Review <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </td>

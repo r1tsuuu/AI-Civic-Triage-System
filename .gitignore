@@ -223,3 +223,7 @@ __marimo__/
 # Project-specific generated artifacts
 staticfiles/
 ml/models/
+
+# Local dev docs (not for repo)
+CLAUDE.md
+CONSTITUTION.md

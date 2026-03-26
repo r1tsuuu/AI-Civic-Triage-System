@@ -83,13 +83,13 @@ def test_override_functionality():
         
         client = _create_authed_client()
         url = reverse('dashboard:report-override', kwargs={'pk': report.pk})
-        response = client.post(url, {'location_text': 'Cabanatuan'}, SERVER_NAME='localhost')
+        response = client.post(url, {'location_text': 'Sabang'}, SERVER_NAME='localhost')
         
         corrections = CorrectionLog.objects.filter(report=report, field_name='location_text')
         assert corrections.count() == 1, f"Expected 1 correction, got {corrections.count()}"
         
         correction = corrections.first()
-        assert correction.new_value == 'Cabanatuan', f"Expected 'Cabanatuan', got {correction.new_value}"
+        assert correction.new_value == 'Sabang', f"Expected 'Sabang', got {correction.new_value}"
         
         print("  PASSED: Location text override creates CorrectionLog")
         tests_passed += 1
@@ -112,7 +112,7 @@ def test_override_functionality():
         url = reverse('dashboard:report-override', kwargs={'pk': report.pk})
         response = client.post(url, {
             'category': 'transport',
-            'location_text': 'Imus'
+            'location_text': 'Inosluban'
         }, SERVER_NAME='localhost')
         
         category_corrections = CorrectionLog.objects.filter(report=report, field_name='category')

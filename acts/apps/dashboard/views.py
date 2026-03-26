@@ -1,550 +1,357 @@
 """
-Dashboard Views - Core moderator interface
-========================================
-
-This module contains all dashboard views for the ACTS demo interface.
-Assigned to SWE-2 for implementation in TASK-031 through TASK-041.
+Dashboard Views — connected to triage.Report pipeline (Phase 2).
 """
 
 from __future__ import annotations
-from typing import ClassVar, TypedDict
+
+import csv
+import threading
+from typing import ClassVar
 
 from django.views.generic import TemplateView, ListView, DetailView, View
 from django.utils import timezone
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
-from apps.webhook.models import RawPost, CorrectionLog
-from apps.triage.exceptions import InvalidTransitionError
-from django.db.models import Count, Q
+from django.conf import settings
+from django.db.models import Count
 from datetime import timedelta, datetime
 from django.core.paginator import Paginator
 
-
-class StatusChangeDict(TypedDict):
-    """Shape of each mock status-change entry in HistoryView / HistoryExportView."""
-    id: str
-    report_id: object          
-    timestamp: datetime
-    from_status: str
-    to_status: str
-    notes: str
-    changed_by: str
+from apps.triage.models import Report, StatusChange, CorrectionLog
+from apps.triage.exceptions import InvalidTransitionError
 
 
 class StatsView(TemplateView):
-    """
-    TASK-031: Dashboard statistics view
-    
-    Displays:
-    - Reports received in last 24 hours (real query from RawPost)
-    - Resolution rate as percentage (fixture data - pending StatusChange model)
-    - Most affected barangay (fixture data - pending location field in RawPost)
-    - Most reported category (fixture data - pending classification in triage app)
-    
-    Note: Using fixture data for stats pending completion of triage pipeline models.
-    24-hour count is real-time from RawPost.received_at.
-    """
     template_name = 'dashboard/stats.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Real query: Reports received in last 24 hours
         now = timezone.now()
         twenty_four_hours_ago = now - timedelta(hours=24)
-        reports_24h = RawPost.objects.filter(
-            received_at__gte=twenty_four_hours_ago
-        ).count()
-        
-        # Fixture data (pending triage pipeline implementation)
-        # In production, these will be calculated from:
-        # - StatusChange model for resolution_rate
-        # - Classification model for most_reported_category
-        # - Location field in RawPost/Classification for most_affected_barangay
-        
+
+        total = Report.objects.count()
+        reports_24h = Report.objects.filter(created_at__gte=twenty_four_hours_ago).count()
+        resolved = Report.objects.filter(status='resolved').count()
+        resolution_rate = round(resolved / total * 100) if total else 0
+
+        most_affected = (
+            Report.objects
+            .exclude(location_text__isnull=True)
+            .exclude(location_text='')
+            .values('location_text')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+            .first()
+        )
+        most_reported = (
+            Report.objects
+            .values('category')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+            .first()
+        )
+
         context['stats'] = {
             'reports_24h': reports_24h,
-            'reports_24h_change': 12,  # fixture: trend indicator
-            'resolution_rate': 78,  # fixture: calculated from StatusChange.resolved / total
-            'resolution_rate_change': 5,  # fixture: trend indicator
-            'most_affected_barangay': 'Cabanatuan',  # fixture: pending location data
-            'most_affected_count': 24,  # fixture: count in that barangay
-            'most_reported_category': 'Disaster',  # fixture: pending classification data
-            'most_reported_count': 18,  # fixture: count in that category
+            'reports_24h_change': 0,
+            'resolution_rate': resolution_rate,
+            'resolution_rate_change': 0,
+            'most_affected_barangay': most_affected['location_text'] if most_affected else 'N/A',
+            'most_affected_count': most_affected['count'] if most_affected else 0,
+            'most_reported_category': most_reported['category'] if most_reported else 'N/A',
+            'most_reported_count': most_reported['count'] if most_reported else 0,
         }
-        
         return context
 
 
 class ReportListView(ListView):
-    """
-    TASK-032: Paginated report list with filtering and sorting
-    
-    Features:
-    - Default sort by urgency score (descending) - mock data until triage pipeline complete
-    - Filters: category, status, barangay (via GET params)
-    - Date range filtering
-    - Pagination: 20 per page
-    - Displays low confidence warnings (mock threshold: 0.75)
-    
-    Mock data notes:
-    - urgency_score: random 1-100 (pending NER pipeline)
-    - confidence: random 0.5-1.0 (pending classifier)
-    - category: random from disaster|transport|infrastructure|safety|other (pending classifier)
-    - status: random from reported|acknowledged|in_progress|resolved (pending StatusChange model)
-    - barangay: random from sample list (pending NER location extraction)
-    """
-    model = RawPost
+    model = Report
     template_name = 'dashboard/list_view.html'
     context_object_name = 'reports'
     paginate_by = 20
-    
+
     def get_queryset(self):
-        queryset = RawPost.objects.all()
-        
-        # Get filter parameters
+        qs = Report.objects.select_related('raw_post').order_by('-urgency_score')
         category_filter = self.request.GET.get('category')
         status_filter = self.request.GET.get('status')
         barangay_filter = self.request.GET.get('barangay')
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
-        
-        # Filter by date range
+
+        if category_filter:
+            qs = qs.filter(category=category_filter)
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        if barangay_filter:
+            qs = qs.filter(location_text__icontains=barangay_filter)
         if date_from:
             try:
                 from_date = timezone.datetime.fromisoformat(date_from)
-                queryset = queryset.filter(received_at__gte=from_date)
+                qs = qs.filter(created_at__gte=from_date)
             except (ValueError, AttributeError):
                 pass
-        
         if date_to:
             try:
-                to_date = timezone.datetime.fromisoformat(date_to)
-                # Add one day to include the whole day
-                to_date = to_date + timedelta(days=1)
-                queryset = queryset.filter(received_at__lt=to_date)
+                to_date = timezone.datetime.fromisoformat(date_to) + timedelta(days=1)
+                qs = qs.filter(created_at__lt=to_date)
             except (ValueError, AttributeError):
                 pass
-        
-        # Apply sorting - default we'll use received_at descending, but we'll add urgency in post-processing
-        queryset = queryset.order_by('-received_at')
-        
-        return queryset
-    
+        return qs
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
-        # Get current filter parameters
+        threshold = getattr(settings, 'NLP_CONFIDENCE_THRESHOLD', 0.65)
+        for report in context['reports']:
+            report.has_low_confidence = report.classifier_confidence < threshold
+            # Template compatibility alias
+            report.confidence = report.classifier_confidence
+
         context['category_filter'] = self.request.GET.get('category', '')
         context['status_filter'] = self.request.GET.get('status', '')
         context['barangay_filter'] = self.request.GET.get('barangay', '')
         context['date_from'] = self.request.GET.get('date_from', '')
         context['date_to'] = self.request.GET.get('date_to', '')
-        
-        # Enrich reports with mock classification data
-        # This will be replaced with real data when triage pipeline is complete
-        import random
-        
-        categories = ['disaster', 'transport', 'infrastructure', 'safety', 'other']
-        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
-        barangays = ['Cabanatuan', 'San Fernando', 'Talugtug', 'General Nakar', 'Amadeo', 
-                     'Imus', 'Tagaytay', 'Cavite City', 'Noveleta', 'Bacoor']
-        
-        for report in context['reports']:
-            # Add mock classification data
-            report.urgency_score = random.randint(1, 100)
-            report.confidence = float(round(random.uniform(0.5, 1.0), 2))
-            report.category = random.choice(categories)
-            report.status = random.choice(statuses)
-            report.barangay = random.choice(barangays)
-            report.confidence_threshold = 0.75
-            report.has_low_confidence = report.confidence < report.confidence_threshold
-        
-        # Apply client-side filtering on mock data
-        category_filter = self.request.GET.get('category')
-        status_filter = self.request.GET.get('status')
-        barangay_filter = self.request.GET.get('barangay')
-        
-        filtered_reports = []
-        for report in context['reports']:
-            if category_filter and report.category != category_filter:
-                continue
-            if status_filter and report.status != status_filter:
-                continue
-            if barangay_filter and report.barangay != barangay_filter:
-                continue
-            filtered_reports.append(report)
-        
-        # Sort by urgency descending (default)
-        sort_by = self.request.GET.get('sort', 'urgency_desc')
-        if sort_by == 'urgency_desc':
-            filtered_reports.sort(key=lambda x: x.urgency_score, reverse=True)
-        elif sort_by == 'urgency_asc':
-            filtered_reports.sort(key=lambda x: x.urgency_score)
-        elif sort_by == 'date_desc':
-            filtered_reports.sort(key=lambda x: x.received_at, reverse=True)
-        elif sort_by == 'date_asc':
-            filtered_reports.sort(key=lambda x: x.received_at)
-        
-        context['reports'] = filtered_reports
-        
-        # Available filter options
-        context['category_options'] = categories
-        context['status_options'] = statuses
-        context['barangay_options'] = barangays
-        context['sort_options'] = [
-            ('urgency_desc', 'Urgency (High to Low)'),
-            ('urgency_asc', 'Urgency (Low to High)'),
-            ('date_desc', 'Newest First'),
-            ('date_asc', 'Oldest First'),
+        context['category_options'] = [
+            'disaster_flooding', 'transportation_traffic', 'public_infrastructure',
+            'public_safety', 'other',
         ]
-        
+        context['status_options'] = [
+            'reported', 'acknowledged', 'in_progress', 'resolved', 'dismissed',
+        ]
+        context['barangay_options'] = list(
+            Report.objects
+            .exclude(location_text__isnull=True)
+            .exclude(location_text='')
+            .values_list('location_text', flat=True)
+            .distinct()[:50]
+        )
         return context
 
 
 class ReportDetailView(DetailView):
-    """
-    TASK-033: Detailed report view with moderation tools
-    
-    Displays:
-    - Original post text
-    - Classification (category, confidence, urgency)
-    - Location (map pin or unresolved)
-    - Status stepper and history
-    - Action buttons (valid next steps only)
-    - Override forms (category, location, routing notes)
-    
-    Mock data notes (pending triage pipeline):
-    - Classification fields: urgency_score, confidence, category
-    - StatusChange history: mock transitions with timestamps
-    - AutoReply: sample AI response
-    - Routing notes: sample internal notes
-    """
-    model = RawPost
+    model = Report
     template_name = 'dashboard/report_detail.html'
     context_object_name = 'report'
-    
+
+    def get_queryset(self):
+        return Report.objects.select_related('raw_post')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         report = context['report']
-        
-        # Add mock classification data
-        import random
-        report.urgency_score = random.randint(1, 100)
-        report.confidence = float(round(random.uniform(0.5, 1.0), 2))
-        
-        # Check for category override in CorrectionLog
-        category_overrides = CorrectionLog.objects.filter(
-            report=report,
-            field_name='category'
-        ).order_by('-corrected_at')
-        
-        if category_overrides.exists():
-            report.category = category_overrides.first().new_value
-        else:
-            report.category = random.choice(['disaster', 'transport', 'infrastructure', 'safety', 'other'])
-        
-        # Check for location_text override in CorrectionLog
-        location_overrides = CorrectionLog.objects.filter(
-            report=report,
-            field_name='location_text'
-        ).order_by('-corrected_at')
-        
-        if location_overrides.exists():
-            report.location_text = location_overrides.first().new_value
-        else:
-            report.location_text = None
-        
-        report.barangay = random.choice(['Cabanatuan', 'San Fernando', 'Talugtug', 'General Nakar', 
-                                        'Amadeo', 'Imus', 'Tagaytay', 'Cavite City', 'Noveleta', 'Bacoor'])
-        report.confidence_threshold = 0.75
-        report.has_low_confidence = report.confidence < report.confidence_threshold
-        
-        # Mock routing notes
-        report.routing_notes = 'Priority: Medium. Route to Cabanatuan Municipal Health Office for verification.'
-        
-        # Mock location coordinates (some reports have them, some don't)
-        if random.random() > 0.3:  # 70% have coordinates
-            report.latitude = float(round(random.uniform(14.5, 15.5), 4))
-            report.longitude = float(round(random.uniform(120.5, 121.5), 4))
-        else:
-            report.latitude = None
-            report.longitude = None
-        
-        # Real status from DB field
+        threshold = getattr(settings, 'NLP_CONFIDENCE_THRESHOLD', 0.65)
+
+        # Template compatibility aliases
+        report.confidence = report.classifier_confidence
+        report.confidence_threshold = threshold
+        report.has_low_confidence = report.classifier_confidence < threshold
+        report.barangay = report.location_text or ''
         report.current_status = report.status
 
-        # Status history: empty list for now (StatusChange model pending)
-        context['status_changes'] = []
-        
-        # Add correction history to context
-        context['corrections'] = report.corrections.all().order_by('-corrected_at')
+        context['status_changes'] = list(
+            StatusChange.objects.filter(report=report).order_by('changed_at')
+        )
 
-        # Mock auto-reply
-        now = timezone.now()
-        context['auto_reply'] = {
-            'id': 'ar_001',
-            'message': 'Thank you for reporting this incident. Our team is investigating and will provide updates soon.',
-            'sent_at': now - timedelta(hours=0.5),
-            'status': 'sent',
-        }
+        try:
+            from apps.response.models import AutoReply
+            context['auto_reply'] = AutoReply.objects.filter(report=report).first()
+        except Exception:
+            context['auto_reply'] = None
 
-        # Available actions derived from VALID_TRANSITIONS on the real status
-        next_statuses = RawPost.VALID_TRANSITIONS.get(report.status, [])
-        context['available_next_statuses'] = next_statuses
+        from apps.response.templates_config import get_reply_text
+        context['auto_reply_preview'] = get_reply_text(report.category)
 
-        # All possible status options for display
-        context['all_statuses'] = [
-            RawPost.STATUS_REPORTED,
-            RawPost.STATUS_ACKNOWLEDGED,
-            RawPost.STATUS_IN_PROGRESS,
-            RawPost.STATUS_RESOLVED,
+        context['available_next_statuses'] = Report.VALID_TRANSITIONS.get(report.status, [])
+        context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
+        context['category_options'] = [
+            'disaster_flooding', 'transportation_traffic', 'public_infrastructure',
+            'public_safety', 'other',
         ]
-
-        # Category options
-        context['category_options'] = ['disaster', 'transport', 'infrastructure', 'safety', 'other']
-
-        # Signal breakdown for urgency visualization
-        context['signal_breakdown'] = {
-            'keyword_score': random.randint(10, 100),
-            'location_score': random.randint(10, 100),
-            'time_score': random.randint(10, 100),
-            'consistency_score': random.randint(10, 100),
-        }
-
+        context['corrections'] = report.corrections.all().order_by('-corrected_at')
+        from apps.triage.scorer import compute_score_with_breakdown
+        _, breakdown = compute_score_with_breakdown(
+            report.raw_post.post_text if report.raw_post else ''
+        )
+        context['signal_breakdown'] = breakdown
         return context
 
 
 class HistoryView(ListView):
-    """
-    TASK-034: Status change history timeline
-    
-    Features:
-    - Timeline of all status changes
-    - Filters: date range, report ID search
-    - Export to CSV
-    
-    Mock data notes (pending StatusChange model):
-    - Returns mock status transitions for all reports
-    - Filters by date range and report ID search
-    - Sorts by timestamp descending (newest first)
-    """
-    model = RawPost
+    model = StatusChange
     template_name = 'dashboard/history.html'
     context_object_name = 'status_changes'
     paginate_by = 50
-    
+
     def get_queryset(self):
-        """Generate mock status change history from all reports"""
-        import random
-        
-        # Get all reports
-        all_reports = RawPost.objects.all()
-        
-        # Generate mock status changes for each report
-        all_changes: list[StatusChangeDict] = []
-        statuses: list[str] = ['reported', 'acknowledged', 'in-progress', 'resolved']
-        
-        for report in all_reports:
-            now = timezone.now()
-            num_transitions = random.randint(2, 4)
-            
-            for i in range(num_transitions):
-                all_changes.append(StatusChangeDict(
-                    id=f"{report.id}_{i}",
-                    report_id=report.id,
-                    timestamp=now - timedelta(hours=random.randint(1, 72)),
-                    from_status=statuses[i - 1] if i > 0 else 'reported',
-                    to_status=statuses[i],
-                    notes=f'Status changed to {statuses[i]}',
-                    changed_by=random.choice(['System', 'Moderator', 'Auto']),
-                ))
-        
-        # Sort by timestamp descending
-        all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        return all_changes
-    
-    def get_context_data(self, **kwargs):
-        """Apply filters and add context"""
-        context = super().get_context_data(**kwargs)
-        
-        # Get filter parameters
+        qs = StatusChange.objects.select_related('report').order_by('-changed_at')
         date_from_str = self.request.GET.get('date_from', '')
         date_to_str = self.request.GET.get('date_to', '')
         report_id_search = self.request.GET.get('report_id', '')
-        
-        # Get base queryset
-        status_changes = self.get_queryset()
-        
-        # Filter by date range
+
         if date_from_str:
             try:
-                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-                status_changes = [c for c in status_changes if c['timestamp'] >= date_from]
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(
+                    tzinfo=timezone.utc)
+                qs = qs.filter(changed_at__gte=date_from)
             except ValueError:
                 pass
-        
         if date_to_str:
             try:
-                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
-                status_changes = [c for c in status_changes if c['timestamp'] <= date_to]
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(
+                    hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                qs = qs.filter(changed_at__lte=date_to)
             except ValueError:
                 pass
-        
-        # Filter by report ID search
         if report_id_search:
-            status_changes = [c for c in status_changes if str(report_id_search).lower() in str(c['report_id']).lower()]
-        
-        # Add filters to context
-        context['date_from'] = date_from_str
-        context['date_to'] = date_to_str
-        context['report_id'] = report_id_search
-        context['total_changes'] = len(status_changes)
-        
-        # Re-paginate filtered results
-        paginator = Paginator(status_changes, self.paginate_by)
-        page_number = self.request.GET.get('page', 1)
-        page_obj = paginator.get_page(page_number)
-        context['page_obj'] = page_obj
-        context['paginator'] = paginator
-        context['status_changes'] = page_obj.object_list
-        
+            qs = qs.filter(report__id__icontains=report_id_search)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['date_from'] = self.request.GET.get('date_from', '')
+        context['date_to'] = self.request.GET.get('date_to', '')
+        context['report_id'] = self.request.GET.get('report_id', '')
+        context['total_changes'] = self.get_queryset().count()
         return context
 
 
 class HistoryExportView(View):
-    """
-    TASK-034: CSV export of status history
-    
-    Returns properly formatted CSV with:
-    - Timestamp, Report ID, Status transition, Notes, Changed By
-    Respects filters: date range and report ID search
-    """
     def get(self, request):
-        import csv
-        import random
-        from datetime import datetime as dt
-        
-        # Get filter parameters
+        qs = StatusChange.objects.select_related('report').order_by('-changed_at')
         date_from_str = request.GET.get('date_from', '')
         date_to_str = request.GET.get('date_to', '')
         report_id_search = request.GET.get('report_id', '')
-        
-        # Generate mock data (same as HistoryView)
-        all_reports = RawPost.objects.all()
-        all_changes = []
-        statuses = ['reported', 'acknowledged', 'in-progress', 'resolved']
-        
-        for report in all_reports:
-            now = timezone.now()
-            num_transitions = random.randint(2, 4)
-            all_changes_export: list[StatusChangeDict] = []
 
-            for i in range(num_transitions):
-                all_changes_export.append(StatusChangeDict(
-                    id=f"{report.id}_{i}",
-                    report_id=report.id,
-                    timestamp=now - timedelta(hours=random.randint(1, 72)),
-                    from_status=statuses[i - 1] if i > 0 else 'reported',
-                    to_status=statuses[i],
-                    notes=f'Status changed to {statuses[i]}',
-                    changed_by=random.choice(['System', 'Moderator', 'Auto']),
-                ))
-            all_changes += all_changes_export
-        
-        # Sort by timestamp descending
-        all_changes.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Apply filters
         if date_from_str:
             try:
-                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-                all_changes = [c for c in all_changes if c['timestamp'] >= date_from]
+                date_from = datetime.strptime(date_from_str, '%Y-%m-%d').replace(
+                    tzinfo=timezone.utc)
+                qs = qs.filter(changed_at__gte=date_from)
             except ValueError:
                 pass
-        
         if date_to_str:
             try:
-                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
-                all_changes = [c for c in all_changes if c['timestamp'] <= date_to]
+                date_to = datetime.strptime(date_to_str, '%Y-%m-%d').replace(
+                    hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                qs = qs.filter(changed_at__lte=date_to)
             except ValueError:
                 pass
-        
         if report_id_search:
-            all_changes = [c for c in all_changes if str(report_id_search).lower() in str(c['report_id']).lower()]
-        
-        # Create CSV response
+            qs = qs.filter(report__id__icontains=report_id_search)
+
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="acts_history_export.csv"'
-        
         writer = csv.writer(response)
-        writer.writerow(['Timestamp', 'Report ID', 'Status Transition', 'Notes', 'Changed By'])
-        
-        for change in all_changes:
-            transition = f"{change['from_status']} → {change['to_status']}"
+        writer.writerow(['Timestamp', 'Report ID', 'From Status', 'To Status', 'Note', 'Changed By'])
+        for sc in qs:
             writer.writerow([
-                change['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
-                str(change['report_id']),
-                transition,
-                change['notes'],
-                change['changed_by'],
+                sc.changed_at.strftime('%Y-%m-%d %H:%M:%S'),
+                str(sc.report_id),
+                sc.from_status,
+                sc.to_status,
+                sc.note or '',
+                sc.changed_by,
             ])
-        
         return response
 
 
 class MapView(TemplateView):
-    """
-    TASK-040: Interactive map view of all reports
-    
-    Features:
-    - Leaflet.js map centered on Central Luzon
-    - Color-coded pins by category
-    - High-urgency pins pulse animation
-    - Click to view report detail
-    """
     template_name = 'dashboard/map.html'
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Placeholder: SWE-2 will implement
-        context['map_center'] = {'lat': 14.8, 'lng': 121.0}
-        context['map_zoom'] = 10
+        # Lipa City Hall per CONSTITUTION.md §14
+        context['map_center'] = {'lat': 13.9420, 'lng': 121.1628}
+        context['map_zoom'] = 14
         return context
 
 
 class ReportsGeoJSONView(View):
-    """
-    TASK-041: GeoJSON API endpoint for map markers
-    
-    Returns:
-    - All current reports with coordinates
-    - Color-coded by category
-    - Urgency score and status
-    """
     def get(self, request):
-        # Placeholder: SWE-2 will implement GeoJSON generation
-        geojson = {
-            'type': 'FeatureCollection',
-            'features': []
-        }
-        return JsonResponse(geojson)
+        features = []
+        qs = Report.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False,
+        ).select_related('raw_post')
+        for r in qs:
+            features.append({
+                'type': 'Feature',
+                'geometry': {
+                    'type': 'Point',
+                    'coordinates': [r.longitude, r.latitude],
+                },
+                'properties': {
+                    'id': str(r.id),
+                    'lat': r.latitude,
+                    'lng': r.longitude,
+                    'category': r.category,
+                    'urgency_score': r.urgency_score,
+                    'status': r.status,
+                    'post_text': r.raw_post.post_text[:120] if r.raw_post else '',
+                },
+            })
+        return JsonResponse({'type': 'FeatureCollection', 'features': features})
+
+
+class StatsDataView(View):
+    def get(self, request):
+        try:
+            cat_qs = (
+                Report.objects
+                .values('category')
+                .annotate(count=Count('id'))
+                .order_by('-count')[:5]
+            )
+            top_categories = [
+                {'category': row['category'], 'count': row['count']} for row in cat_qs
+            ]
+
+            loc_qs = (
+                Report.objects
+                .exclude(location_text__isnull=True)
+                .exclude(location_text='')
+                .values('location_text')
+                .annotate(count=Count('id'))
+                .order_by('-count')[:5]
+            )
+            top_barangays = [
+                {'barangay': row['location_text'], 'count': row['count']} for row in loc_qs
+            ]
+
+            avg_minutes = None
+            resolved_changes = StatusChange.objects.filter(
+                to_status='resolved'
+            ).select_related('report')
+            durations = []
+            for sc in resolved_changes:
+                if sc.report.created_at:
+                    durations.append(
+                        (sc.changed_at - sc.report.created_at).total_seconds() / 60
+                    )
+            if durations:
+                avg_minutes = round(sum(durations) / len(durations), 1)
+
+            return JsonResponse({
+                'top_categories': top_categories,
+                'top_barangays': top_barangays,
+                'avg_resolution_minutes': avg_minutes,
+            })
+        except Exception as exc:
+            return JsonResponse({
+                'error': str(exc),
+                'top_categories': [],
+                'top_barangays': [],
+                'avg_resolution_minutes': None,
+            })
+
 
 class _BaseStatusActionView(View):
-    """
-    Base class for all status-transition POST views.
-
-    Subclasses set:
-        target_status  – the RawPost STATUS_* constant to transition to
-        url_name       – name for this action (used in 405 error text)
-    """
-    target_status: ClassVar[str]  # set by each concrete subclass
-    http_method_names = ['post']  # GET → 405 automatically
+    target_status: ClassVar[str]
+    http_method_names = ['post']
 
     def post(self, request, pk):
-        report = get_object_or_404(RawPost, pk=pk)
+        report = get_object_or_404(Report, pk=pk)
         try:
             report.transition_to(self.target_status, moderator_name="demo")
         except InvalidTransitionError as exc:
@@ -552,118 +359,76 @@ class _BaseStatusActionView(View):
         else:
             messages.success(
                 request,
-                f"Report marked as {self.target_status.replace('_', ' ')}."
+                f"Report marked as {self.target_status.replace('_', ' ')}.",
             )
-        return redirect('dashboard:report-detail', pk=pk)
+        return redirect('dashboard:report_detail', pk=pk)
 
 
 class AcknowledgeReportView(_BaseStatusActionView):
-    """TASK-040: POST /dashboard/reports/<uuid>/acknowledge/"""
-    target_status = RawPost.STATUS_ACKNOWLEDGED
+    target_status = 'acknowledged'
 
 
 class InProgressReportView(_BaseStatusActionView):
-    """TASK-040: POST /dashboard/reports/<uuid>/in-progress/"""
-    target_status = RawPost.STATUS_IN_PROGRESS
+    target_status = 'in_progress'
 
 
 class ResolveReportView(_BaseStatusActionView):
-    """TASK-040: POST /dashboard/reports/<uuid>/resolve/"""
-    target_status = RawPost.STATUS_RESOLVED
+    target_status = 'resolved'
+
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        try:
+            report.transition_to(self.target_status, moderator_name="demo")
+        except InvalidTransitionError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, "Report marked as resolved.")
+            # Fire auto-reply in background — a Graph API failure must not block the redirect.
+            from apps.response.sender import send_reply
+            threading.Thread(target=send_reply, args=(report,), daemon=True).start()
+        return redirect('dashboard:report_detail', pk=pk)
 
 
 class DismissReportView(_BaseStatusActionView):
-    """TASK-040: POST /dashboard/reports/<uuid>/dismiss/"""
-    target_status = RawPost.STATUS_DISMISSED
+    target_status = 'dismissed'
+
 
 class OverrideReportView(View):
-    """
-    TASK-041: Override report fields (category, location_text)
-    
-    Accepts POST with optional category and/or location_text parameters.
-    Updates those fields on the RawPost instance and creates a CorrectionLog
-    entry for each field that was changed.
-    
-    Returns:
-    - JSON response with success/error status
-    - Redirect to report detail page on success
-    """
     http_method_names = ['post']
-    
+
     def post(self, request, pk):
-        report = get_object_or_404(RawPost, pk=pk)
-        
-        try:
-            # Get submitted values
-            new_category = request.POST.get('category', '').strip()
-            new_location_text = request.POST.get('location_text', '').strip()
-            
-            # Track what was changed
-            changes_made = []
-            
-            # Handle category override
-            if new_category:
-                # Get the current/old value from most recent correction log or None
-                last_category_correction = CorrectionLog.objects.filter(
-                    report=report,
-                    field_name='category'
-                ).order_by('-corrected_at').first()
-                
-                if last_category_correction:
-                    old_category = last_category_correction.new_value
-                else:
-                    old_category = None
-                
-                # Only create a log if the value is changing
-                if old_category != new_category:
-                    CorrectionLog.objects.create(
-                        report=report,
-                        field_name='category',
-                        old_value=old_category,
-                        new_value=new_category,
-                        corrected_by=request.POST.get('corrected_by', 'demo'),
-                    )
-                    # Store on the report object for context in detail view
-                    report.category = new_category
-                    changes_made.append('category')
-            
-            # Handle location_text override
-            if new_location_text:
-                # Get the current/old value from most recent correction log or None
-                last_location_correction = CorrectionLog.objects.filter(
-                    report=report,
-                    field_name='location_text'
-                ).order_by('-corrected_at').first()
-                
-                if last_location_correction:
-                    old_location_text = last_location_correction.new_value
-                else:
-                    old_location_text = None
-                
-                # Only create a log if the value is changing
-                if old_location_text != new_location_text:
-                    CorrectionLog.objects.create(
-                        report=report,
-                        field_name='location_text',
-                        old_value=old_location_text,
-                        new_value=new_location_text,
-                        corrected_by=request.POST.get('corrected_by', 'demo'),
-                    )
-                    # Store on the report object
-                    report.location_text = new_location_text
-                    changes_made.append('location_text')
-            
-            # Success message
-            if changes_made:
-                fields_text = ' and '.join(changes_made)
-                messages.success(
-                    request,
-                    f"Report {fields_text} {'was' if len(changes_made) == 1 else 'were'} updated."
-                )
-            else:
-                messages.warning(request, "No fields were updated.")
-            
-        except Exception as e:
-            messages.error(request, f"Error updating report: {str(e)}")
-        
-        return redirect('dashboard:report-detail', pk=pk)
+        report = get_object_or_404(Report, pk=pk)
+        new_category = request.POST.get('category', '').strip()
+        new_location_text = request.POST.get('location_text', '').strip()
+        changes_made = []
+
+        if new_category and new_category != report.category:
+            CorrectionLog.objects.create(
+                report=report,
+                old_category=report.category,
+                new_category=new_category,
+            )
+            report.category = new_category
+            report.save(update_fields=['category', 'updated_at'])
+            changes_made.append('category')
+
+        if new_location_text and new_location_text != report.location_text:
+            CorrectionLog.objects.create(
+                report=report,
+                old_location=report.location_text,
+                new_location=new_location_text,
+            )
+            report.location_text = new_location_text
+            report.save(update_fields=['location_text', 'updated_at'])
+            changes_made.append('location_text')
+
+        if changes_made:
+            fields_text = ' and '.join(changes_made)
+            messages.success(
+                request,
+                f"Report {fields_text} {'was' if len(changes_made) == 1 else 'were'} updated.",
+            )
+        else:
+            messages.warning(request, "No fields were updated.")
+
+        return redirect('dashboard:report_detail', pk=pk)

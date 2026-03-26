@@ -1,0 +1,104 @@
+{% extends 'dashboard/base.html' %}
+{% load static %}
+
+{% block title %}Map View - ACTS{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" />
+<style>
+  #map { height: calc(100vh - 120px); width: 100%; }
+  .urgency-pulse { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+  .legend { background: white; padding: 10px; border-radius: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h4 mb-0">Live Map</h1>
+    <a href="{% url 'dashboard:report_list' %}" class="btn btn-sm btn-outline-secondary">
+      ← Report List
+    </a>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="unresolved-sidebar" class="mt-3 d-none">
+    <h6 class="text-muted">Location Unresolved</h6>
+    <ul id="unresolved-list" class="list-unstyled small"></ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script>
+const MAP_CENTER = [{{ map_center.lat }}, {{ map_center.lng }}];
+const MAP_ZOOM = {{ map_zoom }};
+const GEOJSON_URL = "{% url 'dashboard:map_data' %}";
+const DETAIL_BASE = "{% url 'dashboard:report_list' %}".replace('reports/', 'reports/');
+
+const CATEGORY_COLORS = {
+  disaster_flooding: '#dc3545',
+  transportation_traffic: '#fd7e14',
+  public_infrastructure: '#ffc107',
+  public_safety: '#6f42c1',
+  other: '#6c757d',
+  disaster: '#dc3545',
+  transport: '#fd7e14',
+  infrastructure: '#ffc107',
+  safety: '#6f42c1',
+};
+
+function colorFor(cat) {
+  return CATEGORY_COLORS[cat] || '#6c757d';
+}
+
+function markerIcon(color, pulse) {
+  const cls = pulse ? 'urgency-pulse' : '';
+  return L.divIcon({
+    className: '',
+    html: `<div class="${cls}" style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,.4);"></div>`,
+    iconSize: [14, 14],
+    iconAnchor: [7, 7],
+  });
+}
+
+const map = L.map('map').setView(MAP_CENTER, MAP_ZOOM);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18,
+}).addTo(map);
+
+const clusterGroup = L.markerClusterGroup();
+
+fetch(GEOJSON_URL)
+  .then(r => r.json())
+  .then(data => {
+    const unresolved = [];
+    (data.features || []).forEach(f => {
+      const p = f.properties;
+      const [lng, lat] = f.geometry.coordinates;
+      const color = colorFor(p.category);
+      const pulse = p.urgency_score >= 7.0 && p.status !== 'resolved' && p.status !== 'dismissed';
+      const marker = L.marker([lat, lng], { icon: markerIcon(color, pulse) });
+      marker.bindPopup(`
+        <strong>${p.category}</strong><br>
+        Urgency: ${p.urgency_score}<br>
+        Status: ${p.status}<br>
+        <small>${p.post_text}</small><br>
+        <a href="/dashboard/reports/${p.id}/">View Report →</a>
+      `);
+      clusterGroup.addLayer(marker);
+    });
+    map.addLayer(clusterGroup);
+  })
+  .catch(err => console.warn('GeoJSON fetch failed:', err));
+</script>
+{% endblock %}
