@@ -12,7 +12,7 @@ from .base import *  # noqa: F401, F403
 # ---------------------------------------------------------------------------
 SECRET_KEY = config("SECRET_KEY")  # No default — crash if missing
 DEBUG = False
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv())
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*", cast=Csv())
 
 # ---------------------------------------------------------------------------
 # Database
@@ -36,6 +36,7 @@ SECURE_HSTS_SECONDS = 31536000          # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = True
+SECURE_REDIRECT_EXEMPT = [r"^health/$"]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
