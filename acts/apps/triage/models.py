@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from .exceptions import InvalidTransitionError
+from .constants import ALL_STATUSES, STATUS_LABELS
 
 class Report(models.Model):
     CONFIDENCE_THRESHOLD = 0.65   # below this → for_review + uncertain
@@ -24,14 +25,7 @@ class Report(models.Model):
     longitude = models.FloatField(null=True, blank=True)
     location_confidence = models.CharField(max_length=50, default="unresolved")
 
-    STATUS_CHOICES = [
-        ('for_review',   'For Review'),
-        ('reported',     'Reported'),
-        ('acknowledged', 'Acknowledged'),
-        ('in_progress',  'In Progress'),
-        ('resolved',     'Resolved'),
-        ('dismissed',    'Dismissed'),
-    ]
+    STATUS_CHOICES = [(s, STATUS_LABELS[s]) for s in ALL_STATUSES]
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='reported')
     routing_notes = models.TextField(blank=True)
     is_manually_corrected = models.BooleanField(

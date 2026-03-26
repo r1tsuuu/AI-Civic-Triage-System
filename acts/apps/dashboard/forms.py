@@ -1,13 +1,7 @@
 from django import forms
+from apps.triage.constants import ALL_CATEGORIES, CATEGORY_LABELS
 
-CATEGORY_CHOICES = [
-    ("disaster_flooding",      "Disaster / Flooding"),
-    ("transportation_traffic", "Transportation / Traffic"),
-    ("public_infrastructure",  "Public Infrastructure"),
-    ("public_safety",          "Public Safety"),
-    ("other",                  "Other"),
-    ("uncertain",              "Uncertain"),
-]
+CATEGORY_CHOICES = [(c, CATEGORY_LABELS[c]) for c in ALL_CATEGORIES]
 
 
 class ReportEditForm(forms.Form):
