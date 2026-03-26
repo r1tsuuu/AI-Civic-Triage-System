@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: acts
+    runtime: python
+    rootDir: acts
+    buildCommand: bash build.sh
+    startCommand: gunicorn config.wsgi:application --workers 2 --bind 0.0.0.0:$PORT --timeout 120
+    preDeployCommand: python manage.py migrate --noinput
+    healthCheckPath: /dashboard/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHON_VERSION
+        value: "3.11.9"

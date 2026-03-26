@@ -28,6 +28,10 @@ DATABASES = {
 # ---------------------------------------------------------------------------
 # HTTPS / cookie security
 # ---------------------------------------------------------------------------
+# Railway / Render terminate TLS at the load balancer and forward plain HTTP.
+# Without this, SECURE_SSL_REDIRECT causes an infinite redirect loop.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 SECURE_HSTS_SECONDS = 31536000          # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
@@ -62,9 +66,9 @@ META_PAGE_ACCESS_TOKEN = config("META_PAGE_ACCESS_TOKEN")
 # ---------------------------------------------------------------------------
 # NLP
 # ---------------------------------------------------------------------------
-NLP_MODEL_PATH = config("NLP_MODEL_PATH")
-NER_MODEL_PATH = config("NER_MODEL_PATH")
-NLP_CONFIDENCE_THRESHOLD = config("NLP_CONFIDENCE_THRESHOLD", cast=float)
+NLP_MODEL_PATH = config("NLP_MODEL_PATH", default="ml/models/classifier_v2.pkl")
+NER_MODEL_PATH = config("NER_MODEL_PATH", default="ml/models/ner_model_v1")
+NLP_CONFIDENCE_THRESHOLD = config("NLP_CONFIDENCE_THRESHOLD", cast=float, default=0.65)
 
 # ---------------------------------------------------------------------------
 # Dashboard password gate (TASK-001)
