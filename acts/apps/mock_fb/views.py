@@ -23,7 +23,7 @@ class MockFBFeedView(View):
     def get(self, request):
         posts = (
             RawPost.objects
-            .prefetch_related("report_set")
+            .prefetch_related("report_set", "mock_comments")
             .order_by("-received_at")[:20]
         )
         return render(request, self.template_name, {

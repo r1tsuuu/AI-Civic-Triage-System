@@ -391,6 +391,17 @@ class ResolveReportView(_BaseStatusActionView):
         except InvalidTransitionError as exc:
             messages.error(request, str(exc))
         else:
+            if report.raw_post_id:
+                from apps.mock_fb.models import MockComment
+                MockComment.objects.create(
+                    raw_post_id=report.raw_post_id,
+                    author="Lipa City LGU Official",
+                    text=(
+                        "Hello! This is the LGU Automated System. "
+                        "Our team has addressed this issue. "
+                        "Thank you for reporting!"
+                    ),
+                )
             messages.success(
                 request,
                 "Success! A simulated response has been sent to the citizen's Facebook thread.",
@@ -401,6 +412,26 @@ class ResolveReportView(_BaseStatusActionView):
 
 class DismissReportView(_BaseStatusActionView):
     target_status = 'dismissed'
+
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        try:
+            report.transition_to(self.target_status, moderator_name="demo")
+        except InvalidTransitionError as exc:
+            messages.error(request, str(exc))
+        else:
+            if report.raw_post_id:
+                from apps.mock_fb.models import MockComment
+                MockComment.objects.create(
+                    raw_post_id=report.raw_post_id,
+                    author="Lipa City LGU Official",
+                    text=(
+                        "Hello. We have reviewed your post, but it does not fall under "
+                        "civic concerns or is a duplicate. No further action will be taken."
+                    ),
+                )
+            messages.success(request, "Report dismissed.")
+        return redirect('dashboard:report_detail', pk=pk)
 
 
 class OverrideReportView(View):
