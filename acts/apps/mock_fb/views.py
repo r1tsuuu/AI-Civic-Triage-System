@@ -2,6 +2,7 @@ import uuid
 import logging
 
 from django.shortcuts import render, redirect
+from django.http import JsonResponse
 from django.views import View
 from django.utils import timezone
 
@@ -48,4 +49,29 @@ class MockFBFeedView(View):
         except Exception:
             logger.exception("Pipeline failed for mock post %s", raw_post.id)
 
-        return redirect("/fb/?posted=1")
+        return redirect(f"/fb/?posted=1&post_id={raw_post.id}")
+
+
+class LatestCommentView(View):
+    """
+    GET /fb/api/latest-comment/?post_id=<uuid>
+    Returns the latest MockComment for the given RawPost, or {"comment": null}.
+    """
+
+    def get(self, request):
+        post_id = request.GET.get("post_id", "")
+        try:
+            raw_post = RawPost.objects.get(id=post_id)
+        except (RawPost.DoesNotExist, ValueError):
+            return JsonResponse({"comment": None})
+        comment = raw_post.mock_comments.order_by("-created_at").first()
+        if comment is None:
+            return JsonResponse({"comment": None})
+        return JsonResponse({
+            "comment": {
+                "id": str(comment.id),
+                "author": comment.author,
+                "text": comment.text,
+                "created_at": comment.created_at.isoformat(),
+            }
+        })

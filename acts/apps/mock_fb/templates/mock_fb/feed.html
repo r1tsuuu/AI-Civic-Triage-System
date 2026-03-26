@@ -33,12 +33,32 @@
         }
         .fb-logo { font-size: 28px; font-weight: 900; color: white; letter-spacing: -1px; text-decoration: none; }
         .fb-logo:hover { color: rgba(255,255,255,.9); }
-        .fb-nav-link { color: rgba(255,255,255,.85); font-size: 13px; font-weight: 600; text-decoration: none; padding: 6px 12px; border-radius: 6px; }
-        .fb-nav-link:hover { background: rgba(255,255,255,.1); color: white; }
-        .acts-badge { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: white; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: .5px; }
+        .fb-icon-btn {
+            background: rgba(255,255,255,.15);
+            border: none;
+            border-radius: 50%;
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            color: white;
+            transition: background .15s;
+        }
+        .fb-icon-btn:hover { background: rgba(255,255,255,.25); }
+        .fb-profile-circle {
+            background: white;
+            color: var(--fb-blue);
+            font-weight: 700;
+            font-size: 15px;
+            border-radius: 50%;
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,.4);
+            flex-shrink: 0;
+        }
 
         /* ── Layout ─────────────────────────────────────────────── */
-        .feed-col { max-width: 600px; margin: 0 auto; padding: 20px 8px; }
+        .feed-col { max-width: 600px; margin: 0 auto; padding: 20px 8px 100px; }
 
         /* ── LGU page header ─────────────────────────────────────── */
         .page-header-card { background: var(--fb-white); border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.1); overflow: hidden; margin-bottom: 12px; }
@@ -66,18 +86,6 @@
         .post-meta-name { font-weight: 600; font-size: 14px; }
         .post-meta-time { font-size: 12px; color: var(--fb-text-2); }
         .post-text { padding: 0 16px 12px; font-size: 15px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
-        .post-triage-bar { border-top: 1px solid var(--fb-border); padding: 6px 16px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-
-        /* ── Category pills ─────────────────────────────────────── */
-        .cat-pill { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 10px; color: white; text-transform: uppercase; letter-spacing: .3px; }
-        .cat-disaster_flooding      { background: #dc2626; }
-        .cat-transportation_traffic { background: #ea580c; }
-        .cat-public_infrastructure  { background: #ca8a04; }
-        .cat-public_safety          { background: #7c3aed; }
-        .cat-other                  { background: #6b7280; }
-        .cat-processing             { background: #9ca3af; }
-        .urgency-pill { background: #1f2937; color: white; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 10px; }
-        .triaged-label { margin-left: auto; font-size: 11px; color: var(--fb-text-2); display: flex; align-items: center; gap: 4px; }
 
         /* ── Comment section ─────────────────────────────────────── */
         .comments-section { background: #f7f8fa; border-top: 1px solid var(--fb-border); padding: 10px 16px; }
@@ -95,6 +103,94 @@
 
         /* ── Empty state ────────────────────────────────────────── */
         .empty-feed { text-align: center; padding: 40px 16px; color: var(--fb-text-2); }
+
+        /* ── Messenger bubble ───────────────────────────────────── */
+        #msng-bubble {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0099ff 0%, #a033ff 100%);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 16px rgba(0,0,0,.3);
+            z-index: 1000;
+            transition: transform .15s;
+        }
+        #msng-bubble:hover { transform: scale(1.07); }
+        #msng-badge {
+            position: absolute;
+            top: -2px; right: -2px;
+            background: #e41e3f;
+            color: white;
+            border-radius: 50%;
+            width: 20px; height: 20px;
+            font-size: 11px; font-weight: 700;
+            align-items: center; justify-content: center;
+            border: 2px solid white;
+        }
+
+        /* ── Messenger popup ────────────────────────────────────── */
+        #msng-popup {
+            position: fixed;
+            bottom: 96px; right: 24px;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 28px rgba(0,0,0,.22);
+            z-index: 999;
+            flex-direction: column;
+            overflow: hidden;
+            max-height: 420px;
+        }
+        #msng-header {
+            background: linear-gradient(135deg, #0099ff 0%, #a033ff 100%);
+            color: white;
+            padding: 14px 16px;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex; align-items: center; gap: 10px;
+        }
+        #msng-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #msng-placeholder {
+            font-size: 13px;
+            color: var(--fb-text-2);
+            text-align: center;
+            margin: 12px 0;
+        }
+        .msng-msg-lgu {
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .msng-lgu-avatar {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: #e7f3ff;
+            color: #1877f2;
+            font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .msng-bubble-text {
+            background: #f0f2f5;
+            border-radius: 18px;
+            padding: 9px 13px;
+            font-size: 13px;
+            line-height: 1.45;
+            max-width: 220px;
+        }
+        .msng-bubble-meta {
+            font-size: 10px;
+            color: var(--fb-text-2);
+            margin-top: 3px;
+            padding-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -102,8 +198,14 @@
 <nav class="fb-nav d-flex align-items-center px-3 gap-3">
     <a href="/fb/" class="fb-logo">facebook</a>
     <div class="ms-auto d-flex align-items-center gap-2">
-        <span class="acts-badge">ACTS Demo</span>
-        <a href="/gate/" class="fb-nav-link">Moderator Dashboard →</a>
+        <!-- Search icon -->
+        <button class="fb-icon-btn" title="Search" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+        </button>
+        <!-- Profile circle "J" for Juan Dela Cruz -->
+        <div class="fb-profile-circle" title="Juan Dela Cruz">J</div>
     </div>
 </nav>
 
@@ -119,13 +221,13 @@
             </div>
         </div>
         <div class="page-meta">
-            📍 City Hall, Lipa City, Batangas &nbsp;·&nbsp; 🏛️ Local Government Unit &nbsp;·&nbsp; 🔔 Civic Reports Monitored by ACTS
+            📍 City Hall, Lipa City, Batangas &nbsp;·&nbsp; 🏛️ Local Government Unit
         </div>
     </div>
 
     {% if just_posted %}
     <div class="posted-alert" id="posted-alert">
-        ✅ Your report was submitted and is being processed by ACTS.
+        ✅ Your report was submitted successfully.
         <button onclick="document.getElementById('posted-alert').remove()"
                 style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:#1a3c1c;">×</button>
     </div>
@@ -158,39 +260,21 @@
     <!-- Feed -->
     {% if posts %}
         {% for raw_post in posts %}
-        {% with report=raw_post.report_set.first %}
         <div class="post-card">
 
-            <!-- Post header — Juan Dela Cruz is the citizen poster -->
+            <!-- Post header -->
             <div class="post-header">
                 <div class="user-avatar citizen-avatar-bg">J</div>
                 <div>
                     <div class="post-meta-name">Juan Dela Cruz</div>
-                    <div class="post-meta-time">
-                        {{ raw_post.received_at|timesince }} ago
-                        {% if raw_post.facebook_post_id|slice:":5" == "mock_" %}&nbsp;·&nbsp;🧪 Demo{% endif %}
-                    </div>
+                    <div class="post-meta-time">{{ raw_post.received_at|timesince }} ago</div>
                 </div>
             </div>
 
             <!-- Post text -->
             <div class="post-text">{{ raw_post.post_text }}</div>
 
-            <!-- ACTS triage badge bar -->
-            <div class="post-triage-bar">
-                {% if report %}
-                    <span class="cat-pill cat-{{ report.category }}">
-                        {{ report.category|cut:"_" }}
-                    </span>
-                    <span class="urgency-pill">⚡ {{ report.urgency_score }}/10</span>
-                    <span class="triaged-label">✓ Triaged by ACTS</span>
-                {% else %}
-                    <span class="cat-pill cat-processing">Processing…</span>
-                    <span class="triaged-label">⏳ In pipeline</span>
-                {% endif %}
-            </div>
-
-            <!-- LGU reply comments -->
+            <!-- LGU reply comments (shown in feed as well as Messenger) -->
             {% if raw_post.mock_comments.all %}
             <div class="comments-section">
                 {% for comment in raw_post.mock_comments.all %}
@@ -207,7 +291,6 @@
             {% endif %}
 
         </div>
-        {% endwith %}
         {% endfor %}
     {% else %}
         <div class="empty-feed">
@@ -218,13 +301,132 @@
 
 </div>
 
+<!-- ── Messenger floating bubble ──────────────────────────────── -->
+<div id="msng-bubble" onclick="toggleMessenger()" title="Messenger">
+    <!-- Messenger lightning bolt logo -->
+    <svg width="30" height="30" viewBox="0 0 36 36" fill="white">
+        <path d="M18 2C9.163 2 2 8.71 2 17c0 4.67 2.073 8.857 5.38 11.77V34l4.94-2.72A16.6 16.6 0 0 0 18 32c8.837 0 16-6.71 16-15S26.837 2 18 2zm1.6 20.2-4.08-4.36-7.96 4.36 8.76-9.28 4.18 4.36 7.86-4.36-8.76 9.28z"/>
+    </svg>
+    <span id="msng-badge" style="display:none;position:absolute;top:-2px;right:-2px;background:#e41e3f;color:white;border-radius:50%;width:20px;height:20px;font-size:11px;font-weight:700;align-items:center;justify-content:center;border:2px solid white;"></span>
+</div>
+
+<!-- ── Messenger popup window ─────────────────────────────────── -->
+<div id="msng-popup" style="display:none;">
+    <div id="msng-header">
+        <svg width="22" height="22" viewBox="0 0 36 36" fill="white" style="flex-shrink:0;">
+            <path d="M18 2C9.163 2 2 8.71 2 17c0 4.67 2.073 8.857 5.38 11.77V34l4.94-2.72A16.6 16.6 0 0 0 18 32c8.837 0 16-6.71 16-15S26.837 2 18 2zm1.6 20.2-4.08-4.36-7.96 4.36 8.76-9.28 4.18 4.36 7.86-4.36-8.76 9.28z"/>
+        </svg>
+        <div>
+            <div>Messenger</div>
+            <div style="font-size:11px;font-weight:400;opacity:.85;">Lipa City LGU</div>
+        </div>
+        <button onclick="toggleMessenger()" style="margin-left:auto;background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <div id="msng-body">
+        <p id="msng-placeholder">No replies yet. The LGU will respond to your report shortly.</p>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    // Auto-expand textarea
     const ta = document.querySelector('textarea[name="post_text"]');
     if (ta) ta.addEventListener('input', function() {
         this.style.height = 'auto';
         this.style.height = this.scrollHeight + 'px';
     });
+
+    // ── Messenger polling ────────────────────────────────────────
+    // Capture post_id from URL (set after form submission) → persist in localStorage
+    (function capturePostId() {
+        const params = new URLSearchParams(location.search);
+        const newId = params.get("post_id");
+        if (newId) {
+            localStorage.setItem("acts_post_id", newId);
+            // Reset last known comment so we detect the reply on the new post
+            localStorage.removeItem("acts_last_comment_id");
+        }
+    })();
+
+    const postId = localStorage.getItem("acts_post_id");
+    let lastCommentId = localStorage.getItem("acts_last_comment_id") || null;
+    let messengerOpen = false;
+
+    function toggleMessenger() {
+        messengerOpen = !messengerOpen;
+        const popup = document.getElementById("msng-popup");
+        popup.style.display = messengerOpen ? "flex" : "none";
+        if (messengerOpen) {
+            // Hide badge when user opens window
+            document.getElementById("msng-badge").style.display = "none";
+        }
+    }
+
+    function showBadge() {
+        if (!messengerOpen) {
+            const badge = document.getElementById("msng-badge");
+            badge.style.display = "flex";
+        }
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    function renderComment(c) {
+        // Remove placeholder text once we have a real message
+        const placeholder = document.getElementById("msng-placeholder");
+        if (placeholder) placeholder.remove();
+
+        const body = document.getElementById("msng-body");
+        const wrapper = document.createElement("div");
+        wrapper.className = "msng-msg-lgu";
+
+        let ts = "";
+        try { ts = new Date(c.created_at).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}); }
+        catch(e) {}
+
+        wrapper.innerHTML =
+            '<div class="msng-lgu-avatar">LGU</div>' +
+            '<div>' +
+              '<div class="msng-bubble-text">' + escHtml(c.text) + '</div>' +
+              '<div class="msng-bubble-meta">' + escHtml(c.author) + ' · ' + ts + '</div>' +
+            '</div>';
+
+        body.appendChild(wrapper);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    async function pollComment() {
+        if (!postId) return;
+        try {
+            const res = await fetch("/fb/api/latest-comment/?post_id=" + encodeURIComponent(postId));
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.comment && data.comment.id !== lastCommentId) {
+                lastCommentId = data.comment.id;
+                localStorage.setItem("acts_last_comment_id", lastCommentId);
+                renderComment(data.comment);
+                showBadge();
+                // Auto-open popup when reply first arrives
+                if (!messengerOpen) {
+                    messengerOpen = true;
+                    document.getElementById("msng-popup").style.display = "flex";
+                }
+            }
+        } catch (e) {
+            // Network error — silently skip, retry next tick
+        }
+    }
+
+    if (postId) {
+        pollComment(); // immediate first check on page load
+        setInterval(pollComment, 5000);
+    }
 </script>
 </body>
 </html>
