@@ -14,4 +14,5 @@ urlpatterns = [
     path("gate/", gate_view, name="gate"),
     path("webhook/", include("apps.webhook.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
+    path("fb/", include("apps.mock_fb.urls")),
 ]

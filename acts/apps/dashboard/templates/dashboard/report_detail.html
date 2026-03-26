@@ -10,20 +10,6 @@
 {% block content %}
 <div class="container-fluid py-4">
 
-    {# Django messages — shown after a status transition #}
-    {% if messages %}
-    <div class="row mb-3">
-        <div class="col-md-8">
-            {% for message in messages %}
-            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="h3">Report Detail</h1>
@@ -372,18 +358,10 @@
                                         </div>
                                         <p class="mb-1">{{ change.note }}</p>
                                         <small class="text-muted">by {{ change.changed_by }}</small>
-                                        {% if change.to_status == 'resolved' and auto_reply %}
-                                            {% if auto_reply.graph_api_success %}
-                                            <div class="d-flex align-items-center gap-2 mt-2">
-                                                <span class="badge bg-success">✓ AutoReply sent</span>
-                                                <span class="text-muted small">{{ auto_reply.sent_at|date:"M d, Y H:i" }}</span>
-                                            </div>
-                                            {% else %}
-                                            <div class="d-flex align-items-center gap-2 mt-2">
-                                                <span class="badge bg-danger">⚠ Reply Failed</span>
-                                                <span class="text-muted small">{{ auto_reply.error_message|truncatechars:100 }}</span>
-                                            </div>
-                                            {% endif %}
+                                        {% if change.to_status == 'resolved' %}
+                                        <div class="d-flex align-items-center gap-2 mt-2">
+                                            <span class="badge bg-success">✓ Simulated response sent</span>
+                                        </div>
                                         {% endif %}
                                     </div>
                                 </div>
@@ -399,44 +377,28 @@
         </div>
     </div>
 
-    <!-- Section 9: Auto-Reply preview (in_progress) or result (resolved) -->
-    {% if report.status == 'in_progress' %}
+    <!-- Section 9: Simulated response preview -->
+    {% if report.status == 'in_progress' or report.status == 'resolved' %}
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card border-info">
-                <div class="card-header bg-info bg-opacity-10">
-                    <strong>Auto-Reply Preview</strong>
-                    <span class="text-muted small ms-2">This message will be sent to the citizen when you resolve this report</span>
-                </div>
-                <div class="card-body">
-                    <p class="mb-0">{{ auto_reply_preview }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    {% if auto_reply %}
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card {% if auto_reply.graph_api_success %}border-success{% else %}border-danger{% endif %}">
-                <div class="card-header {% if auto_reply.graph_api_success %}bg-success bg-opacity-10{% else %}bg-danger bg-opacity-10{% endif %}">
-                    <h5 class="mb-0">
-                        {% if auto_reply.graph_api_success %}
-                            <span class="text-success">✓ AutoReply Sent</span>
+                <div class="card-header bg-info bg-opacity-10 d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-dots-fill text-info"></i>
+                    <strong>
+                        {% if report.status == 'resolved' %}
+                            Simulated Response Sent
                         {% else %}
-                            <span class="text-danger">⚠ Reply Failed</span>
+                            Simulated Response Preview
                         {% endif %}
-                    </h5>
+                    </strong>
+                    <span class="text-muted small ms-1">
+                        {% if report.status == 'in_progress' %}
+                            — This message will be shown when you resolve this report
+                        {% endif %}
+                    </span>
                 </div>
                 <div class="card-body">
-                    {% if auto_reply.reply_text %}
-                        <p class="mb-2">{{ auto_reply.reply_text }}</p>
-                    {% endif %}
-                    {% if auto_reply.graph_api_success %}
-                        <small class="text-muted">Sent {{ auto_reply.sent_at|date:"M d, Y H:i" }}</small>
-                    {% else %}
-                        <small class="text-danger">{{ auto_reply.error_message }}</small>
-                    {% endif %}
+                    <p class="mb-0 fst-italic text-secondary">{{ simulated_reply_preview }}</p>
                 </div>
             </div>
         </div>

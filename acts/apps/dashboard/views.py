@@ -5,7 +5,6 @@ Dashboard Views — connected to triage.Report pipeline (Phase 2).
 from __future__ import annotations
 
 import csv
-import threading
 from typing import ClassVar
 
 from django.views.generic import TemplateView, ListView, DetailView, View
@@ -153,14 +152,8 @@ class ReportDetailView(DetailView):
             StatusChange.objects.filter(report=report).order_by('changed_at')
         )
 
-        try:
-            from apps.response.models import AutoReply
-            context['auto_reply'] = AutoReply.objects.filter(report=report).first()
-        except Exception:
-            context['auto_reply'] = None
-
         from apps.response.templates_config import get_reply_text
-        context['auto_reply_preview'] = get_reply_text(report.category)
+        context['simulated_reply_preview'] = get_reply_text(report.category)
 
         context['available_next_statuses'] = Report.VALID_TRANSITIONS.get(report.status, [])
         context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
@@ -398,15 +391,47 @@ class ResolveReportView(_BaseStatusActionView):
         except InvalidTransitionError as exc:
             messages.error(request, str(exc))
         else:
-            messages.success(request, "Report marked as resolved.")
-            # Fire auto-reply in background — a Graph API failure must not block the redirect.
-            from apps.response.sender import send_reply
-            threading.Thread(target=send_reply, args=(report,), daemon=True).start()
+            if report.raw_post_id:
+                from apps.mock_fb.models import MockComment
+                MockComment.objects.create(
+                    raw_post_id=report.raw_post_id,
+                    author="Lipa City LGU Official",
+                    text=(
+                        "Hello! This is the LGU Automated System. "
+                        "Our team has addressed this issue. "
+                        "Thank you for reporting!"
+                    ),
+                )
+            messages.success(
+                request,
+                "Success! A simulated response has been sent to the citizen's Facebook thread.",
+                extra_tags="mock-resolve",
+            )
         return redirect('dashboard:report_detail', pk=pk)
 
 
 class DismissReportView(_BaseStatusActionView):
     target_status = 'dismissed'
+
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        try:
+            report.transition_to(self.target_status, moderator_name="demo")
+        except InvalidTransitionError as exc:
+            messages.error(request, str(exc))
+        else:
+            if report.raw_post_id:
+                from apps.mock_fb.models import MockComment
+                MockComment.objects.create(
+                    raw_post_id=report.raw_post_id,
+                    author="Lipa City LGU Official",
+                    text=(
+                        "Hello. We have reviewed your post, but it does not fall under "
+                        "civic concerns or is a duplicate. No further action will be taken."
+                    ),
+                )
+            messages.success(request, "Report dismissed.")
+        return redirect('dashboard:report_detail', pk=pk)
 
 
 class OverrideReportView(View):
