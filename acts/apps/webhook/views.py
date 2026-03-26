@@ -44,23 +44,7 @@ def webhook_facebook(request):
             logger.warning("Webhook received invalid JSON payload")
             return HttpResponse("Bad Request", status=400)
 
-        for entry in payload.get("entry", []):
-            for change in entry.get("changes", []):
-                value = change.get("value", {})
-                post_id = value.get("post_id") or entry.get("id")
-                message = value.get("message", "")
-
-                if not post_id:
-                    continue
-
-                raw_post, created = RawPost.objects.get_or_create(
-                    facebook_post_id=post_id,
-                    defaults={"post_text": message},
-                )
-
-                if created:
-                    _trigger_pipeline(raw_post)
-
+        _process_payload(payload)
         return HttpResponse("OK", status=200)
 
     return HttpResponse("Method Not Allowed", status=405)
@@ -105,26 +89,67 @@ def webhook_receive(request):
         return HttpResponse("Bad Request", status=400)
 
     # --- Extract and save posts, then trigger async processing ---
+    _process_payload(payload)
+
+    # HTTP 200 is sent before any NLP thread does any work
+    return HttpResponse("OK", status=200)
+
+
+def _process_payload(payload: dict) -> None:
+    """
+    Walk a Meta feed webhook payload and save new RawPost records.
+
+    Meta fires the feed subscription for new posts, edited posts, comments,
+    reactions, and deletions.  We only want brand-new top-level page posts:
+      item == "post"  AND  verb == "add"
+
+    Any other combination (comments, reactions, edits, removes) is logged and
+    skipped so it never reaches the NLP pipeline or the database.
+    """
     for entry in payload.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
-            post_id = value.get("post_id") or entry.get("id")
+
+            item = value.get("item")
+            verb = value.get("verb")
+
+            # Skip anything that is not a brand-new top-level post
+            if item != "post" or verb != "add":
+                logger.debug(
+                    "Skipping feed event: item=%s verb=%s", item, verb
+                )
+                continue
+
+            post_id = value.get("post_id")
             message = value.get("message", "")
+            created_time = value.get("created_time")  # Unix timestamp from Meta
 
             if not post_id:
+                logger.warning("Feed event missing post_id, skipping")
                 continue
+
+            if not message:
+                logger.info(
+                    "Post %s has no message text (photo/link only?), skipping",
+                    post_id,
+                )
+                continue
+
+            logger.info(
+                "Incoming post: post_id=%s created_time=%s message_preview=%.80r",
+                post_id, created_time, message,
+            )
 
             raw_post, created = RawPost.objects.get_or_create(
                 facebook_post_id=post_id,
                 defaults={"post_text": message},
             )
 
-            # Only trigger pipeline for newly created posts
             if created:
+                logger.info("Saved RawPost %s — triggering NLP pipeline", post_id)
                 _trigger_pipeline(raw_post)
-
-    # HTTP 200 is sent before any NLP thread does any work
-    return HttpResponse("OK", status=200)
+            else:
+                logger.info("Duplicate post_id=%s, pipeline not re-triggered", post_id)
 
 
 def _trigger_pipeline(raw_post: RawPost) -> None:

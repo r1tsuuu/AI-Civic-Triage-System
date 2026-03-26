@@ -17,19 +17,25 @@ def make_signature(body: bytes, secret: str = TEST_SECRET) -> str:
 
 def make_payload(post_id: str, message: str) -> bytes:
     payload = {
+        "object": "page",
         "entry": [
             {
                 "id": "page_123",
+                "time": 1700000000,
                 "changes": [
                     {
+                        "field": "feed",
                         "value": {
+                            "item": "post",
+                            "verb": "add",
                             "post_id": post_id,
+                            "created_time": 1700000000,
                             "message": message,
-                        }
+                        },
                     }
                 ],
             }
-        ]
+        ],
     }
     return json.dumps(payload).encode("utf-8")
 
