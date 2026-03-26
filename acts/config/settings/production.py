@@ -37,8 +37,8 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SECURE_SSL_REDIRECT = config("SECURE_SSL_REDIRECT", default=True, cast=bool)
 SECURE_REDIRECT_EXEMPT = [
-    r'^health/',  
-    r'health',  
+    r'^health/',
+    r'^webhook/',
 ]
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

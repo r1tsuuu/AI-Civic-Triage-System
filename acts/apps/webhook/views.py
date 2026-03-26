@@ -15,6 +15,58 @@ logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
+def webhook_facebook(request):
+    """
+    GET  /webhook/  — Meta hub.challenge verification handshake.
+    POST /webhook/  — Receive Facebook page feed events.
+
+    Meta sends the verification GET and all event POSTs to the same callback
+    URL, so both methods must live on the same path.
+    """
+    if request.method == "GET":
+        mode = request.GET.get("hub.mode")
+        token = request.GET.get("hub.verify_token")
+        challenge = request.GET.get("hub.challenge")
+
+        if mode == "subscribe" and token == settings.META_VERIFY_TOKEN:
+            return HttpResponse(challenge, status=200, content_type="text/plain")
+
+        return HttpResponse("Forbidden", status=403)
+
+    if request.method == "POST":
+        signature_header = request.META.get("HTTP_X_HUB_SIGNATURE_256", "")
+        if not _verify_signature(request.body, signature_header):
+            return HttpResponse("Forbidden", status=403)
+
+        try:
+            payload = json.loads(request.body)
+        except json.JSONDecodeError:
+            logger.warning("Webhook received invalid JSON payload")
+            return HttpResponse("Bad Request", status=400)
+
+        for entry in payload.get("entry", []):
+            for change in entry.get("changes", []):
+                value = change.get("value", {})
+                post_id = value.get("post_id") or entry.get("id")
+                message = value.get("message", "")
+
+                if not post_id:
+                    continue
+
+                raw_post, created = RawPost.objects.get_or_create(
+                    facebook_post_id=post_id,
+                    defaults={"post_text": message},
+                )
+
+                if created:
+                    _trigger_pipeline(raw_post)
+
+        return HttpResponse("OK", status=200)
+
+    return HttpResponse("Method Not Allowed", status=405)
+
+
+@csrf_exempt
 @require_http_methods(["GET"])
 def webhook_verify(request):
     """
