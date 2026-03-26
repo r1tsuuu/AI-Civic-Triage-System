@@ -63,19 +63,13 @@ body {
     font-weight: 700;
 }
 
-#sidebar .brand-logo {
-    font-size: 1.75rem;
-    color: #ffffff;
-    letter-spacing: 0.15em;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-#sidebar .brand-subtitle {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-top: 0.15rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+/* Logo is black-on-white; invert to white on the dark sidebar */
+.sidebar-logo {
+    width: 148px;
+    height: auto;
+    display: block;
+    filter: brightness(0) invert(1);
+    opacity: 0.92;
 }
 
 #sidebar .nav-item {

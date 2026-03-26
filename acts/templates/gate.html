@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -30,8 +31,10 @@
     <div class="card shadow-sm border-0">
       <div class="card-body p-4">
         <div class="text-center mb-4">
-          <h4 class="fw-bold text-dark mb-1">ACTS Demo</h4>
-          <p class="text-muted small">AI-powered Civic Triage System</p>
+          <img src="{% static 'img/logo.png' %}"
+               alt="ACTS — AI Civic Triage System"
+               style="height: 52px; width: auto; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
+          <p class="text-muted small mb-0">LGU Command Center — Demo Access</p>
         </div>
 
         {% if error %}

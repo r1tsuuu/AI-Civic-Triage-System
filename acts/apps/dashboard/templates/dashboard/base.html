@@ -27,8 +27,9 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark flex-column" id="sidebar">
             <div class="container-fluid flex-column">
                 <a class="navbar-brand mb-4" href="{% url 'dashboard:stats' %}">
-                    <span class="brand-logo">ACTS</span>
-                    <span class="brand-subtitle">Demo</span>
+                    <img src="{% static 'img/logo.png' %}"
+                         alt="ACTS — AI Civic Triage System"
+                         class="sidebar-logo">
                 </a>
 
                 {% with url_name=request.resolver_match.url_name %}
