@@ -1,71 +1,71 @@
 """
-Tests for TASK-031: Stats view
+Tests for TASK-031: Stats view (Phase 2 integration)
 """
+
+import uuid
 from django.test import TestCase, Client
 from django.utils import timezone
 from datetime import timedelta
-from apps.webhook.models import RawPost
 from django.urls import reverse
+
+from apps.webhook.models import RawPost
+from apps.triage.models import Report
+
+
+def _make_report(suffix, category='other', status='reported', location_text=None):
+    raw_post = RawPost.objects.create(
+        facebook_post_id=f'stats_{suffix}_{uuid.uuid4().hex[:8]}',
+        post_text=f'Stats test post {suffix}',
+        received_at=timezone.now(),
+        processed=True,
+    )
+    return Report.objects.create(
+        raw_post=raw_post,
+        category=category,
+        classifier_confidence=0.8,
+        urgency_score=5.0,
+        status=status,
+        location_text=location_text,
+    )
 
 
 class StatsViewTestCase(TestCase):
-    """Test the dashboard stats view (TASK-031)"""
-    
+
     def setUp(self):
-        """Set up test client and fixtures"""
         self.client = Client()
         self.stats_url = reverse('dashboard:stats')
-        
-        # Set demo session so middleware allows access
+
         session = self.client.session
         session['demo_authed'] = True
         session.save()
-        
-        # Create test RawPost instances
+
+        # Create 5 recent reports (created_at = now via auto_now_add)
+        self.recent_reports = [_make_report(f'r{i}') for i in range(5)]
+
+        # Create 3 "old" reports and backdate them via update()
+        old_reports = [_make_report(f'o{i}') for i in range(3)]
         now = timezone.now()
-        
-        # Create 5 posts in the last 24 hours
-        for i in range(5):
-            RawPost.objects.create(
-                facebook_post_id=f'post_24h_{i}',
-                post_text=f'Test post within 24 hours {i}',
-                received_at=now - timedelta(hours=i)
+        for r in old_reports:
+            Report.objects.filter(pk=r.pk).update(
+                created_at=now - timedelta(hours=30)
             )
-        
-        # Create 3 posts older than 24 hours
-        for i in range(3):
-            RawPost.objects.create(
-                facebook_post_id=f'post_old_{i}',
-                post_text=f'Test post older than 24 hours {i}',
-                received_at=now - timedelta(hours=25 + i)
-            )
-    
+
     def test_stats_view_returns_200(self):
-        """Test that the stats view returns HTTP 200 OK"""
         response = self.client.get(self.stats_url)
         self.assertEqual(response.status_code, 200)
-    
+
     def test_stats_view_uses_correct_template(self):
-        """Test that the stats view uses the stats.html template"""
         response = self.client.get(self.stats_url)
         self.assertTemplateUsed(response, 'dashboard/stats.html')
-    
+
     def test_reports_24h_count_is_correct(self):
-        """Test that the 24-hour report count is accurately queried"""
         response = self.client.get(self.stats_url)
-        
-        # Should receive context with stats
         self.assertIn('stats', response.context)
         stats = response.context['stats']
-        
-        # Should have 5-8 reports (could be more if other tests run first)
-        # Just verify it's a reasonable number greater than 0
         self.assertGreaterEqual(stats['reports_24h'], 5)
-    
+
     def test_stats_context_has_all_required_fields(self):
-        """Test that all required stats fields are in context"""
         response = self.client.get(self.stats_url)
-        
         stats = response.context['stats']
         required_fields = [
             'reports_24h',
@@ -77,40 +77,35 @@ class StatsViewTestCase(TestCase):
             'most_reported_category',
             'most_reported_count',
         ]
-        
         for field in required_fields:
             self.assertIn(field, stats, f"Missing required field: {field}")
-    
+
     def test_reports_24h_older_than_24_hours_are_excluded(self):
-        """
-        Test that the view correctly distinguishes recent from old reports.
-        """
-        # Verify setUp created the expected ratio of posts
-        total_posts = RawPost.objects.count()
-        self.assertEqual(total_posts, 8)  # 5 recent + 3 old
-    
+        # 8 total Reports created in setUp, but only 5 are recent
+        total = Report.objects.count()
+        self.assertEqual(total, 8)
+        stats = self.client.get(self.stats_url).context['stats']
+        self.assertEqual(stats['reports_24h'], 5)
+
     def test_stats_view_with_no_reports(self):
-        """Test that the stats view handles empty database gracefully"""
-        RawPost.objects.all().delete()
-        
+        Report.objects.all().delete()
         response = self.client.get(self.stats_url)
-        
         self.assertEqual(response.status_code, 200)
         stats = response.context['stats']
         self.assertEqual(stats['reports_24h'], 0)
-    
-    def test_fixture_data_is_present(self):
-        """Test that fixture data (pending model updates) is present"""
+
+    def test_resolution_rate_field_is_present(self):
         response = self.client.get(self.stats_url)
-        
         stats = response.context['stats']
-        
-        # These are fixture values until the models are extended
         self.assertIsNotNone(stats['resolution_rate'])
-        self.assertIsNotNone(stats['most_affected_barangay'])
-        self.assertIsNotNone(stats['most_reported_category'])
-        
-        # Verify types
         self.assertIsInstance(stats['resolution_rate'], int)
+
+    def test_most_affected_barangay_field_is_string(self):
+        response = self.client.get(self.stats_url)
+        stats = response.context['stats']
         self.assertIsInstance(stats['most_affected_barangay'], str)
+
+    def test_most_reported_category_field_is_string(self):
+        response = self.client.get(self.stats_url)
+        stats = response.context['stats']
         self.assertIsInstance(stats['most_reported_category'], str)

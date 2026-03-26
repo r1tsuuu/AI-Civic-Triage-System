@@ -15,7 +15,7 @@
             <small class="text-muted">All actions taken on reports</small>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{% url 'dashboard:history-export' %}?date_from={{ date_from }}&date_to={{ date_to }}&report_id={{ report_id }}" 
+            <a href="{% url 'dashboard:history_export' %}?date_from={{ date_from }}&date_to={{ date_to }}&report_id={{ report_id }}"
                class="btn btn-sm btn-outline-primary" id="export-btn">
                 <i class="bi bi-download"></i> Export CSV
             </a>
@@ -75,18 +75,18 @@
                         <i class="bi bi-arrow-right"></i>
                         {{ change.to_status|upper }}
                     </span>
-                    <span class="timestamp">{{ change.timestamp|date:"M d, Y H:i" }}</span>
+                    <span class="timestamp">{{ change.changed_at|date:"M d, Y H:i" }}</span>
                 </div>
                 <div class="timeline-body">
                     <div class="report-info">
                         <strong>Report:</strong>
-                        <a href="{% url 'dashboard:report-detail' change.report_id %}" class="report-link">
+                        <a href="{% url 'dashboard:report_detail' change.report_id %}" class="report-link">
                             {{ change.report_id }}
                         </a>
                     </div>
                     <div class="change-note">
                         <strong>Note:</strong>
-                        <span>{{ change.notes }}</span>
+                        <span>{{ change.note }}</span>
                     </div>
                 </div>
                 <div class="timeline-footer">

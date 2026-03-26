@@ -12,7 +12,7 @@ def process_post(raw_post):
     save Report with status="reported" -> mark raw_post.processed = True.
     """
     try:
-        text = getattr(raw_post, 'content', getattr(raw_post, 'text', str(raw_post)))
+        text = raw_post.post_text
         
         category, clf_conf = classify(text)
         locations = extract_locations(text)

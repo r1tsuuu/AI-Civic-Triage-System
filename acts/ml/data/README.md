@@ -2,6 +2,8 @@
 
 ## Target LGU
 
+Chosen demo LGU: `Lipa City, Batangas`
+
 > **AI Engineer:** Document your chosen LGU here before starting TASK-021.
 >
 > Include:
@@ -10,6 +12,11 @@
 > - Reason for selection (active, publicly accessible, sufficient post volume)
 >
 > This choice affects: NER model, gazetteer (TASK-072), and seed training data (TASK-021).
+
+Current demo focus:
+- City/municipality name: `Lipa City, Batangas`
+- Reason for selection: existing demo fixtures, NER examples, and geocoding defaults in this repo already target Lipa City
+- Facebook page URL: to be finalized by the team before live demo hookup
 
 ---
 

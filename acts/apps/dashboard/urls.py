@@ -5,32 +5,33 @@ from . import views
 app_name = "dashboard"
 
 urlpatterns = [
-    # TASK-001: logout clears demo session flag
+    # Logout
     path("logout/", gate_views.gate_logout, name="logout"),
 
-    # TASK-031: Stats view - dashboard homepage
+    # Stats view — dashboard homepage
     path("", views.StatsView.as_view(), name="stats"),
 
-    # TASK-032: Report list view
-    path("reports/", views.ReportListView.as_view(), name="report-list"),
+    # Stats data API
+    path("stats/data/", views.StatsDataView.as_view(), name="stats_data"),
 
-    # TASK-033: Report detail view
-    path("reports/<uuid:pk>/", views.ReportDetailView.as_view(), name="report-detail"),
+    # Report list
+    path("reports/", views.ReportListView.as_view(), name="report_list"),
 
-    # TASK-034: History view
+    # Map view — must come before reports/<uuid:pk>/ to avoid UUID matching "map"
+    path("reports/map/", views.MapView.as_view(), name="map_view"),
+    path("reports/map/data/", views.ReportsGeoJSONView.as_view(), name="map_data"),
+
+    # Report detail
+    path("reports/<uuid:pk>/", views.ReportDetailView.as_view(), name="report_detail"),
+
+    # Status action endpoints
+    path("reports/<uuid:pk>/acknowledge/", views.AcknowledgeReportView.as_view(), name="acknowledge"),
+    path("reports/<uuid:pk>/in-progress/", views.InProgressReportView.as_view(), name="in_progress"),
+    path("reports/<uuid:pk>/resolve/", views.ResolveReportView.as_view(), name="resolve"),
+    path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="dismiss"),
+    path("reports/<uuid:pk>/override/", views.OverrideReportView.as_view(), name="override"),
+
+    # History
     path("history/", views.HistoryView.as_view(), name="history"),
-    path("history/export/", views.HistoryExportView.as_view(), name="history-export"),
-
-    # TASK-040: Map view
-    path("map/", views.MapView.as_view(), name="map"),
-
-    # TASK-040: Status action endpoints
-    path("reports/<uuid:pk>/acknowledge/", views.AcknowledgeReportView.as_view(), name="report-acknowledge"),
-    path("reports/<uuid:pk>/in-progress/", views.InProgressReportView.as_view(), name="report-in-progress"),
-    path("reports/<uuid:pk>/resolve/", views.ResolveReportView.as_view(), name="report-resolve"),
-    path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="report-dismiss"),
-
-    # TASK-041: Override endpoint for moderation and API endpoints for map data
-    path("reports/<uuid:pk>/override/", views.OverrideReportView.as_view(), name="report-override"),
-    path("api/reports/geojson/", views.ReportsGeoJSONView.as_view(), name="reports-geojson"),
+    path("history/export/", views.HistoryExportView.as_view(), name="history_export"),
 ]
