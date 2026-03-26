@@ -13,7 +13,7 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.conf import settings
-from django.db.models import Count
+from django.db.models import Count, Avg
 from datetime import timedelta, datetime
 from django.core.paginator import Paginator
 
@@ -29,9 +29,9 @@ class StatsView(TemplateView):
         now = timezone.now()
         twenty_four_hours_ago = now - timedelta(hours=24)
 
-        total = Report.objects.count()
-        reports_24h = Report.objects.filter(created_at__gte=twenty_four_hours_ago).count()
+        total    = Report.objects.count()
         resolved = Report.objects.filter(status='resolved').count()
+        reports_24h    = Report.objects.filter(created_at__gte=twenty_four_hours_ago).count()
         resolution_rate = round(resolved / total * 100) if total else 0
 
         most_affected = (
@@ -50,6 +50,68 @@ class StatsView(TemplateView):
             .order_by('-count')
             .first()
         )
+
+        # ── Impact metric 1: Average Response Time ────────────────────────
+        # Time from RawPost creation (Report.created_at) to status=resolved
+        resolved_changes = (
+            StatusChange.objects
+            .filter(to_status='resolved')
+            .select_related('report')
+        )
+        durations = [
+            (sc.changed_at - sc.report.created_at).total_seconds() / 3600
+            for sc in resolved_changes
+            if sc.report and sc.report.created_at
+        ]
+        avg_hours = round(sum(durations) / len(durations), 1) if durations else None
+        if avg_hours is None:
+            avg_response_display = "N/A"
+            avg_response_sub = "No resolved reports yet"
+        elif avg_hours < 1:
+            avg_response_display = f"{int(avg_hours * 60)} min"
+            avg_response_sub = f"Across {len(durations)} resolved report{'s' if len(durations) != 1 else ''}"
+        else:
+            avg_response_display = f"{avg_hours} hrs"
+            avg_response_sub = f"Across {len(durations)} resolved report{'s' if len(durations) != 1 else ''}"
+
+        # ── Impact metric 2: Top Emergency Zone ───────────────────────────
+        # Barangay with the highest average urgency score (≥2 reports required
+        # for statistical relevance)
+        top_zone = (
+            Report.objects
+            .exclude(location_text__isnull=True)
+            .exclude(location_text='')
+            .values('location_text')
+            .annotate(avg_urgency=Avg('urgency_score'), report_count=Count('id'))
+            .filter(report_count__gte=1)
+            .order_by('-avg_urgency')
+            .first()
+        )
+        if top_zone:
+            top_zone_name  = top_zone['location_text']
+            top_zone_score = round(top_zone['avg_urgency'], 1)
+            top_zone_count = top_zone['report_count']
+        else:
+            top_zone_name  = "N/A"
+            top_zone_score = 0
+            top_zone_count = 0
+
+        # ── Impact metric 3: Resolution Rate (already computed, add detail) ─
+        active = Report.objects.filter(
+            status__in=['reported', 'for_review', 'acknowledged', 'in_progress']
+        ).count()
+
+        context['impact'] = {
+            'avg_response_display': avg_response_display,
+            'avg_response_sub':     avg_response_sub,
+            'top_zone_name':        top_zone_name,
+            'top_zone_score':       top_zone_score,
+            'top_zone_count':       top_zone_count,
+            'resolution_rate':      resolution_rate,
+            'resolved_count':       resolved,
+            'total_count':          total,
+            'active_count':         active,
+        }
 
         context['stats'] = {
             'reports_24h': reports_24h,

@@ -5,6 +5,234 @@
 {% block page_title %}Dashboard{% endblock %}
 
 {% block content %}
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     IMPACT ANALYTICS — executive summary for mayors / heads of offices
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div class="impact-banner mb-4">
+
+    <!-- Banner header -->
+    <div class="impact-header">
+        <div class="d-flex align-items-center gap-3">
+            <div class="impact-icon-wrap">
+                <i class="bi bi-bar-chart-line-fill"></i>
+            </div>
+            <div>
+                <div class="impact-title">Executive Impact Summary</div>
+                <div class="impact-subtitle">
+                    Quantified performance data for budget allocation and resource planning
+                    during disasters and civic emergencies.
+                </div>
+            </div>
+        </div>
+        <div class="impact-timestamp d-none d-md-block">
+            <i class="bi bi-circle-fill text-success me-1" style="font-size:.55rem;"></i>
+            Live data &nbsp;·&nbsp; {% now "F j, Y" %}
+        </div>
+    </div>
+
+    <!-- Three metric cards -->
+    <div class="impact-cards">
+
+        <!-- Card 1: Average Response Time -->
+        <div class="impact-card">
+            <div class="impact-card-icon teal">
+                <i class="bi bi-stopwatch-fill"></i>
+            </div>
+            <div class="impact-card-body">
+                <div class="impact-card-label">Avg. Response Time</div>
+                <div class="impact-card-value">{{ impact.avg_response_display }}</div>
+                <div class="impact-card-sub">{{ impact.avg_response_sub }}</div>
+            </div>
+            <div class="impact-card-badge">
+                <i class="bi bi-info-circle me-1"></i>
+                Report creation → Resolved
+            </div>
+        </div>
+
+        <!-- Card 2: Top Emergency Zone -->
+        <div class="impact-card {% if impact.top_zone_score >= 75 %}impact-card--alert{% endif %}">
+            <div class="impact-card-icon {% if impact.top_zone_score >= 75 %}red{% else %}amber{% endif %}">
+                <i class="bi bi-geo-alt-fill"></i>
+            </div>
+            <div class="impact-card-body">
+                <div class="impact-card-label">Top Emergency Zone</div>
+                <div class="impact-card-value">{{ impact.top_zone_name }}</div>
+                <div class="impact-card-sub">
+                    Avg. urgency {{ impact.top_zone_score }}/100
+                    &nbsp;·&nbsp; {{ impact.top_zone_count }} report{{ impact.top_zone_count|pluralize }}
+                </div>
+            </div>
+            <div class="impact-card-badge {% if impact.top_zone_score >= 75 %}badge--danger{% endif %}">
+                {% if impact.top_zone_score >= 75 %}
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>High-risk zone
+                {% elif impact.top_zone_score >= 50 %}
+                    <i class="bi bi-exclamation-circle me-1"></i>Moderate risk
+                {% else %}
+                    <i class="bi bi-geo-fill me-1"></i>Highest urgency barangay
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card 3: Resolution Rate -->
+        <div class="impact-card">
+            <div class="impact-card-icon green">
+                <i class="bi bi-check2-circle"></i>
+            </div>
+            <div class="impact-card-body">
+                <div class="impact-card-label">Resolution Rate</div>
+                <div class="impact-card-value">{{ impact.resolution_rate }}%</div>
+                <div class="impact-card-sub">
+                    {{ impact.resolved_count }} resolved
+                    &nbsp;·&nbsp; {{ impact.active_count }} active
+                    &nbsp;·&nbsp; {{ impact.total_count }} total
+                </div>
+            </div>
+            <!-- Mini progress bar -->
+            <div class="impact-rate-bar">
+                <div class="impact-rate-fill"
+                     style="width:{{ impact.resolution_rate }}%;
+                            background: {% if impact.resolution_rate >= 70 %}#16a34a{% elif impact.resolution_rate >= 40 %}#d97706{% else %}#dc2626{% endif %};">
+                </div>
+            </div>
+            <div class="impact-card-badge">
+                <i class="bi bi-graph-up me-1"></i>
+                Government response effectiveness
+            </div>
+        </div>
+
+    </div><!-- /impact-cards -->
+</div><!-- /impact-banner -->
+
+<!-- ── CSS scoped to this component ──────────────────────────────────── -->
+<style>
+.impact-banner {
+    background: linear-gradient(135deg, #0f2d4a 0%, #1a4a6b 60%, #1e5a80 100%);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(15,45,74,.25);
+}
+
+/* Header strip */
+.impact-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.impact-icon-wrap {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: rgba(255,255,255,.12);
+    display: flex; align-items: center; justify-content: center;
+    color: #7dd3fc;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+.impact-title {
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: .3px;
+}
+.impact-subtitle {
+    color: rgba(255,255,255,.65);
+    font-size: .78rem;
+    margin-top: 2px;
+    max-width: 480px;
+    line-height: 1.45;
+}
+.impact-timestamp {
+    color: rgba(255,255,255,.5);
+    font-size: .75rem;
+    white-space: nowrap;
+}
+
+/* Three-column card grid */
+.impact-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+}
+@media (max-width: 768px) {
+    .impact-cards { grid-template-columns: 1fr; }
+    .impact-card  { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,.08); }
+}
+
+.impact-card {
+    padding: 20px 24px 16px;
+    border-right: 1px solid rgba(255,255,255,.08);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: background .2s;
+}
+.impact-card:last-child { border-right: none; }
+.impact-card:hover      { background: rgba(255,255,255,.04); }
+.impact-card--alert     { background: rgba(220,38,38,.07); }
+
+/* Icon chip */
+.impact-card-icon {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+}
+.impact-card-icon.teal  { background: rgba(20,184,166,.2);  color: #2dd4bf; }
+.impact-card-icon.amber { background: rgba(245,158,11,.2);  color: #fbbf24; }
+.impact-card-icon.red   { background: rgba(239,68, 68,.25); color: #f87171; }
+.impact-card-icon.green { background: rgba(22,163,74,.2);   color: #4ade80; }
+
+.impact-card-label {
+    font-size: .7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: rgba(255,255,255,.55);
+}
+.impact-card-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: white;
+    line-height: 1.1;
+    letter-spacing: -.5px;
+}
+.impact-card-sub {
+    font-size: .75rem;
+    color: rgba(255,255,255,.55);
+    line-height: 1.4;
+}
+
+/* Progress bar for resolution rate */
+.impact-rate-bar {
+    height: 5px;
+    background: rgba(255,255,255,.12);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.impact-rate-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .6s ease;
+}
+
+/* Bottom badge/label */
+.impact-card-badge {
+    font-size: .68rem;
+    color: rgba(255,255,255,.35);
+    margin-top: 2px;
+}
+.impact-card-badge.badge--danger {
+    color: #fca5a5;
+}
+</style>
+
+<!-- ── Existing 4-stat cards ─────────────────────────────────────────── -->
 <div class="row mb-4">
     <!-- Reports in Last 24 Hours -->
     <div class="col-md-6 col-lg-3 mb-3">
