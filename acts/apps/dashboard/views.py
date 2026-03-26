@@ -473,3 +473,83 @@ class OverrideReportView(View):
             messages.warning(request, "No fields were updated.")
 
         return redirect('dashboard:report_detail', pk=pk)
+
+
+# ── Public Citizen Transparency Portal ──────────────────────────────────────
+
+
+class LandingView(TemplateView):
+    template_name = "portal/index.html"
+
+
+class PublicGeoJSONView(View):
+    """
+    GET /api/public/geojson/
+    Anonymised GeoJSON for the citizen transparency map.
+    Only exposes: category, display_status, barangay. No raw text, no IDs, no names.
+    """
+
+    CATEGORY_LABELS: ClassVar[dict] = {
+        "disaster_flooding":      "Flooding / Disaster",
+        "transportation_traffic": "Traffic / Roads",
+        "public_infrastructure":  "Infrastructure",
+        "public_safety":          "Public Safety",
+        "other":                  "Other",
+    }
+
+    STATUS_LABELS: ClassVar[dict] = {
+        "reported":     "Pending",
+        "acknowledged": "Acknowledged",
+        "in_progress":  "In Progress",
+        "resolved":     "Resolved",
+        "dismissed":    "Closed",
+    }
+
+    def get(self, request):
+        features = []
+        qs = Report.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False,
+        ).values("category", "status", "location_text", "latitude", "longitude")
+
+        for r in qs:
+            features.append({
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [r["longitude"], r["latitude"]],
+                },
+                "properties": {
+                    "category":       r["category"],
+                    "category_label": self.CATEGORY_LABELS.get(r["category"], r["category"]),
+                    "status":         r["status"],
+                    "status_label":   self.STATUS_LABELS.get(r["status"], r["status"]),
+                    "barangay":       r["location_text"] or "Unknown",
+                },
+            })
+
+        return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+class PublicStatsView(View):
+    """
+    GET /api/public/stats/
+    Returns lightweight public counters for the live ticker.
+    """
+
+    def get(self, request):
+        today = timezone.localdate()
+        resolved_today = StatusChange.objects.filter(
+            to_status="resolved",
+            changed_at__date=today,
+        ).count()
+        active = Report.objects.filter(
+            status__in=["reported", "acknowledged", "in_progress"]
+        ).count()
+        total = Report.objects.count()
+
+        return JsonResponse({
+            "resolved_today": resolved_today,
+            "active_reports":  active,
+            "total_reports":   total,
+        })

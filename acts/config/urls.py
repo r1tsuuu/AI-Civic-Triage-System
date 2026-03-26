@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 from apps.dashboard.gate_views import gate_view
+from apps.dashboard.views import LandingView, PublicGeoJSONView, PublicStatsView
 
 
 def health(request):
@@ -15,4 +16,8 @@ urlpatterns = [
     path("webhook/", include("apps.webhook.urls")),
     path("dashboard/", include("apps.dashboard.urls")),
     path("fb/", include("apps.mock_fb.urls")),
+    # Public citizen transparency portal
+    path("", LandingView.as_view(), name="landing"),
+    path("api/public/geojson/", PublicGeoJSONView.as_view(), name="public_geojson"),
+    path("api/public/stats/", PublicStatsView.as_view(), name="public_stats"),
 ]

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lipa City Transparency Portal – ACTS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <style>
+        :root {
+            --acts-navy:   #0f2d4a;
+            --acts-teal:   #0d9488;
+            --acts-teal-l: #14b8a6;
+            --acts-bg:     #f1f5f9;
+            --acts-white:  #ffffff;
+            --acts-text:   #1e293b;
+            --acts-muted:  #64748b;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            background: var(--acts-bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--acts-text);
+            margin: 0;
+        }
+
+        /* ── Top nav ─────────────────────────────────────── */
+        .portal-nav {
+            background: var(--acts-navy);
+            padding: 0 24px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25);
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+        .nav-logo {
+            background: var(--acts-teal);
+            color: white;
+            font-weight: 800;
+            font-size: 13px;
+            padding: 4px 9px;
+            border-radius: 5px;
+            letter-spacing: .5px;
+        }
+        .nav-title {
+            color: rgba(255,255,255,.9);
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .nav-links { display: flex; align-items: center; gap: 8px; }
+        .nav-link-pill {
+            color: rgba(255,255,255,.7);
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            transition: background .15s, color .15s;
+        }
+        .nav-link-pill:hover { background: rgba(255,255,255,.1); color: white; }
+        .nav-link-pill.accent {
+            background: var(--acts-teal);
+            color: white;
+        }
+        .nav-link-pill.accent:hover { background: var(--acts-teal-l); }
+
+        /* ── Hero ────────────────────────────────────────── */
+        .hero {
+            background: linear-gradient(135deg, var(--acts-navy) 0%, #1a4a6b 60%, #1e5a7a 100%);
+            padding: 64px 24px 56px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(13,148,136,.25);
+            border: 1px solid rgba(13,148,136,.5);
+            color: var(--acts-teal-l);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+        .hero h1 {
+            color: white;
+            font-size: clamp(28px, 5vw, 44px);
+            font-weight: 800;
+            margin: 0 0 14px;
+            line-height: 1.15;
+        }
+        .hero h1 span { color: var(--acts-teal-l); }
+        .hero p {
+            color: rgba(255,255,255,.72);
+            font-size: 17px;
+            max-width: 540px;
+            margin: 0 auto 32px;
+            line-height: 1.6;
+        }
+
+        /* ── Search bar ──────────────────────────────────── */
+        .search-wrap {
+            max-width: 480px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .search-input {
+            width: 100%;
+            padding: 14px 52px 14px 20px;
+            border-radius: 40px;
+            border: 2px solid transparent;
+            font-size: 15px;
+            outline: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,.25);
+            transition: border-color .2s;
+        }
+        .search-input:focus { border-color: var(--acts-teal-l); }
+        .search-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--acts-muted);
+            pointer-events: none;
+        }
+        .search-result-banner {
+            margin-top: 12px;
+            color: rgba(255,255,255,.85);
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        /* ── Stats ticker ────────────────────────────────── */
+        .stats-bar {
+            background: var(--acts-white);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0;
+        }
+        .stats-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+        }
+        .stat-cell {
+            flex: 1;
+            padding: 18px 24px;
+            text-align: center;
+            border-right: 1px solid #e2e8f0;
+        }
+        .stat-cell:last-child { border-right: none; }
+        .stat-num {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--acts-navy);
+            line-height: 1;
+            display: block;
+        }
+        .stat-num.green { color: #16a34a; }
+        .stat-num.amber { color: #d97706; }
+        .stat-label {
+            font-size: 12px;
+            color: var(--acts-muted);
+            font-weight: 500;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+        .stat-live-dot {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #16a34a;
+            margin-right: 4px;
+            animation: pulse-dot 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: .4; transform: scale(.7); }
+        }
+
+        /* ── Main layout ─────────────────────────────────── */
+        .main-grid {
+            max-width: 1140px;
+            margin: 32px auto;
+            padding: 0 16px 60px;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 24px;
+        }
+        @media (max-width: 768px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .sidebar { order: -1; }
+        }
+
+        /* ── Map card ────────────────────────────────────── */
+        .card-panel {
+            background: var(--acts-white);
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.05);
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--acts-navy);
+            margin: 0;
+        }
+        .card-subtitle {
+            font-size: 12px;
+            color: var(--acts-muted);
+            margin-top: 2px;
+        }
+        #public-map {
+            height: 460px;
+            width: 100%;
+        }
+
+        /* ── Map legend ──────────────────────────────────── */
+        .map-legend {
+            padding: 12px 20px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--acts-muted);
+        }
+        .legend-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* ── Sidebar ─────────────────────────────────────── */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; }
+
+        /* ── Category breakdown ──────────────────────────── */
+        .breakdown-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .breakdown-row:last-child { border-bottom: none; }
+        .breakdown-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .breakdown-label {
+            flex: 1;
+            font-size: 13px;
+            color: var(--acts-text);
+        }
+        .breakdown-count {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--acts-navy);
+        }
+
+        /* ── Info card ───────────────────────────────────── */
+        .info-card {
+            background: linear-gradient(135deg, var(--acts-navy), #1a4a6b);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+        }
+        .info-card h3 { font-size: 14px; font-weight: 700; margin: 0 0 10px; opacity: .9; }
+        .info-card p { font-size: 13px; line-height: 1.6; opacity: .75; margin: 0; }
+
+        /* ── Footer ──────────────────────────────────────── */
+        .portal-footer {
+            background: var(--acts-navy);
+            color: rgba(255,255,255,.5);
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+        }
+        .portal-footer a { color: var(--acts-teal-l); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="portal-nav">
+    <a href="/" class="nav-brand">
+        <span class="nav-logo">ACTS</span>
+        <span class="nav-title">Lipa City Transparency Portal</span>
+    </a>
+    <div class="nav-links">
+        <a href="/fb/" class="nav-link-pill">Report an Issue</a>
+        <a href="/gate/" class="nav-link-pill accent">LGU Dashboard →</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-badge">🛰 Live Civic Intelligence</div>
+    <h1>Monitoring <span>Lipa City's</span> Pulse.</h1>
+    <p>Real-time civic issues reported by residents — categorized, tracked, and resolved by the LGU. Your city. Your data.</p>
+
+    <!-- Search bar -->
+    <div class="search-wrap">
+        <input
+            type="text"
+            id="barangay-search"
+            class="search-input"
+            placeholder="Search your barangay… e.g. Sabang, Marawoy"
+            autocomplete="off"
+        />
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+    </div>
+    <div class="search-result-banner" id="search-banner"></div>
+</section>
+
+<!-- Live stats ticker -->
+<div class="stats-bar">
+    <div class="stats-inner">
+        <div class="stat-cell">
+            <span class="stat-num green" id="stat-resolved-today">—</span>
+            <div class="stat-label"><span class="stat-live-dot"></span>Resolved Today</div>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-num amber" id="stat-active">—</span>
+            <div class="stat-label">Active Reports</div>
+        </div>
+        <div class="stat-cell">
+            <span class="stat-num" id="stat-total">—</span>
+            <div class="stat-label">Total Reports</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main content grid -->
+<div class="main-grid">
+
+    <!-- Map -->
+    <div class="card-panel">
+        <div class="card-header">
+            <div>
+                <div class="card-title">📍 Civic Issues Map — Lipa City</div>
+                <div class="card-subtitle" id="map-subtitle">Loading reports…</div>
+            </div>
+            <button id="clear-search-btn" onclick="clearSearch()"
+                    style="display:none;background:#f1f5f9;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:600;color:var(--acts-navy);cursor:pointer;">
+                Clear Filter ×
+            </button>
+        </div>
+        <div id="public-map"></div>
+        <div class="map-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#dc2626"></span>Flooding / Disaster</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ea580c"></span>Traffic / Roads</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ca8a04"></span>Infrastructure</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span>Public Safety</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#6b7280"></span>Other</div>
+            <div class="legend-item">
+                <span class="legend-dot" style="background:#6b7280;opacity:.35;border:2px solid #6b7280;"></span>Resolved
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <!-- Category breakdown -->
+        <div class="card-panel">
+            <div class="card-header">
+                <div class="card-title">Issues by Category</div>
+            </div>
+            <div style="padding:4px 20px 12px;" id="breakdown-list">
+                <div style="font-size:13px;color:var(--acts-muted);padding:12px 0;">Loading…</div>
+            </div>
+        </div>
+
+        <!-- What is ACTS -->
+        <div class="info-card">
+            <h3>🤖 Powered by ACTS</h3>
+            <p>The AI Civic Triage System automatically classifies, prioritizes, and routes civic reports to the right LGU department — so nothing gets lost.</p>
+        </div>
+
+        <!-- How to report -->
+        <div class="card-panel">
+            <div class="card-header">
+                <div class="card-title">📢 How to Report an Issue</div>
+            </div>
+            <div style="padding:12px 20px 16px;font-size:13px;color:var(--acts-muted);line-height:1.7;">
+                <p style="margin:0 0 8px;">Post on the <strong>Lipa City LGU Facebook page</strong> or use the link below. Your report is automatically processed and sent to the right department.</p>
+                <a href="/fb/" style="display:inline-block;background:var(--acts-teal);color:white;font-weight:600;font-size:13px;padding:8px 18px;border-radius:8px;text-decoration:none;margin-top:4px;">
+                    Report an Issue →
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="portal-footer">
+    <p style="margin:0;">
+        ACTS — AI Civic Triage System &nbsp;·&nbsp; Lipa City, Batangas &nbsp;·&nbsp;
+        Data refreshes every 15 seconds &nbsp;·&nbsp;
+        <a href="/gate/">LGU Login</a>
+    </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ── Category config ──────────────────────────────────────────────
+const CAT_COLORS = {
+    disaster_flooding:      '#dc2626',
+    transportation_traffic: '#ea580c',
+    public_infrastructure:  '#ca8a04',
+    public_safety:          '#7c3aed',
+    other:                  '#6b7280',
+};
+
+function catColor(cat) {
+    return CAT_COLORS[cat] || '#6b7280';
+}
+
+// ── Leaflet map init ─────────────────────────────────────────────
+const map = L.map('public-map', {
+    center: [13.9420, 121.1628],  // Lipa City Hall
+    zoom: 14,
+    zoomControl: true,
+    scrollWheelZoom: false,
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 18,
+}).addTo(map);
+
+// ── State ────────────────────────────────────────────────────────
+let allFeatures = [];
+let allMarkers  = [];   // parallel array to allFeatures
+let activeFilter = '';
+
+// ── Build markers from GeoJSON ───────────────────────────────────
+function buildMarkers(features) {
+    // Clear existing markers
+    allMarkers.forEach(m => map.removeLayer(m));
+    allMarkers = [];
+    allFeatures = features;
+
+    features.forEach(function(f) {
+        const p = f.properties;
+        const isResolved = p.status === 'resolved' || p.status === 'dismissed';
+        const color = catColor(p.category);
+
+        const marker = L.circleMarker(
+            [f.geometry.coordinates[1], f.geometry.coordinates[0]],
+            {
+                radius:      isResolved ? 7 : 9,
+                color:       color,
+                fillColor:   color,
+                fillOpacity: isResolved ? 0.3 : 0.85,
+                weight:      2,
+                opacity:     isResolved ? 0.5 : 1,
+            }
+        );
+
+        // Strict anonymity popup — no raw text, no names
+        const statusBadgeColor = isResolved ? '#16a34a' : '#d97706';
+        marker.bindPopup(
+            '<div style="font-family:-apple-system,sans-serif;min-width:160px;">' +
+            '<div style="font-weight:700;font-size:13px;margin-bottom:6px;color:#1e293b;">' + escHtml(p.category_label) + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">' +
+              '<span style="display:inline-block;background:' + statusBadgeColor + ';color:white;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600;">' +
+              escHtml(p.status_label) + '</span>' +
+            '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-top:4px;">📍 ' + escHtml(p.barangay) + '</div>' +
+            '</div>',
+            { maxWidth: 220 }
+        );
+
+        marker._acts_barangay = (p.barangay || '').toLowerCase();
+        marker._acts_category  = p.category;
+        marker.addTo(map);
+        allMarkers.push(marker);
+    });
+
+    updateBreakdown(features);
+    updateMapSubtitle(features.length, features.length);
+}
+
+// ── Barangay search / filter ─────────────────────────────────────
+function applyFilter(query) {
+    activeFilter = query.trim().toLowerCase();
+    let shown = 0;
+
+    allMarkers.forEach(function(m, i) {
+        const match = !activeFilter || m._acts_barangay.includes(activeFilter);
+        if (match) {
+            if (!map.hasLayer(m)) m.addTo(map);
+            shown++;
+        } else {
+            if (map.hasLayer(m)) map.removeLayer(m);
+        }
+    });
+
+    const banner = document.getElementById('search-banner');
+    const clearBtn = document.getElementById('clear-search-btn');
+    if (activeFilter) {
+        const label = query.trim();
+        banner.textContent = shown === 0
+            ? 'No reports found in "' + label + '".'
+            : shown + ' issue' + (shown !== 1 ? 's' : '') + ' found in "' + label + '"';
+        clearBtn.style.display = 'inline-block';
+    } else {
+        banner.textContent = '';
+        clearBtn.style.display = 'none';
+    }
+
+    updateMapSubtitle(shown, allFeatures.length);
+}
+
+function clearSearch() {
+    document.getElementById('barangay-search').value = '';
+    applyFilter('');
+}
+
+document.getElementById('barangay-search').addEventListener('input', function() {
+    applyFilter(this.value);
+});
+
+function updateMapSubtitle(shown, total) {
+    const el = document.getElementById('map-subtitle');
+    if (total === 0) {
+        el.textContent = 'No geolocated reports yet.';
+    } else if (shown === total) {
+        el.textContent = total + ' geolocated report' + (total !== 1 ? 's' : '') + ' across Lipa City';
+    } else {
+        el.textContent = 'Showing ' + shown + ' of ' + total + ' reports';
+    }
+}
+
+// ── Category breakdown sidebar ────────────────────────────────────
+const CAT_LABELS = {
+    disaster_flooding:      'Flooding / Disaster',
+    transportation_traffic: 'Traffic / Roads',
+    public_infrastructure:  'Infrastructure',
+    public_safety:          'Public Safety',
+    other:                  'Other',
+};
+
+function updateBreakdown(features) {
+    const counts = {};
+    features.forEach(function(f) {
+        const c = f.properties.category;
+        counts[c] = (counts[c] || 0) + 1;
+    });
+
+    const sorted = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; });
+    const el = document.getElementById('breakdown-list');
+
+    if (sorted.length === 0) {
+        el.innerHTML = '<div style="font-size:13px;color:var(--acts-muted);padding:10px 0;">No data yet.</div>';
+        return;
+    }
+
+    el.innerHTML = sorted.map(function(entry) {
+        const [cat, count] = entry;
+        return '<div class="breakdown-row">' +
+            '<span class="breakdown-dot" style="background:' + catColor(cat) + '"></span>' +
+            '<span class="breakdown-label">' + escHtml(CAT_LABELS[cat] || cat) + '</span>' +
+            '<span class="breakdown-count">' + count + '</span>' +
+            '</div>';
+    }).join('');
+}
+
+// ── Load GeoJSON ─────────────────────────────────────────────────
+function loadMap() {
+    fetch('/api/public/geojson/')
+        .then(function(r){ return r.json(); })
+        .then(function(data){ buildMarkers(data.features || []); })
+        .catch(function(){ updateMapSubtitle(0, 0); });
+}
+
+// ── Load live stats ticker ────────────────────────────────────────
+function loadStats() {
+    fetch('/api/public/stats/')
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            setText('stat-resolved-today', d.resolved_today);
+            setText('stat-active',         d.active_reports);
+            setText('stat-total',          d.total_reports);
+        })
+        .catch(function(){});
+}
+
+function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (val !== null && val !== undefined) ? val : '—';
+}
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Boot ──────────────────────────────────────────────────────────
+loadMap();
+loadStats();
+setInterval(loadStats, 15000);  // refresh stats ticker every 15 s
+</script>
+</body>
+</html>
