@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
 
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
@@ -31,38 +31,48 @@
                     <span class="brand-subtitle">Demo</span>
                 </a>
 
+                {% with url_name=request.resolver_match.url_name %}
                 <ul class="navbar-nav flex-column w-100">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:stats' %}">
+                        <a class="nav-link {% if url_name == 'stats' or url_name == 'stats_data' %}active{% endif %}"
+                           href="{% url 'dashboard:stats' %}"
+                           aria-label="Dashboard overview">
                             <i class="bi bi-speedometer2"></i>
                             Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:report_list' %}">
-                            <i class="bi bi-list-ul"></i>
-                            Reports
+                        <a class="nav-link {% if 'report' in url_name|default:'' %}active{% endif %}"
+                           href="{% url 'dashboard:report_list' %}"
+                           aria-label="Reports queue">
+                            <i class="bi bi-list-check"></i>
+                            Reports Queue
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:map_view' %}">
-                            <i class="bi bi-map"></i>
-                            Map
+                        <a class="nav-link {% if url_name == 'map_view' or url_name == 'map_data' %}active{% endif %}"
+                           href="{% url 'dashboard:map_view' %}"
+                           aria-label="Map view">
+                            <i class="bi bi-map-fill"></i>
+                            Map View
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'dashboard:history' %}">
+                        <a class="nav-link {% if 'history' in url_name|default:'' %}active{% endif %}"
+                           href="{% url 'dashboard:history' %}"
+                           aria-label="Status history">
                             <i class="bi bi-clock-history"></i>
                             History
                         </a>
                     </li>
                     <li class="nav-item mt-4 border-top pt-4">
-                        <a class="nav-link text-danger" href="{% url 'dashboard:logout' %}">
+                        <a class="nav-link" style="color: #FC8181 !important;" href="{% url 'dashboard:logout' %}">
                             <i class="bi bi-box-arrow-right"></i>
                             Logout
                         </a>
                     </li>
                 </ul>
+                {% endwith %}
             </div>
         </nav>
 
@@ -115,7 +125,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
     {% block scripts %}{% endblock %}
 

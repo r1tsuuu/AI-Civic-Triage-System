@@ -83,84 +83,104 @@
     </small>
 </div>
 
-<!-- reports table -->
-<div class="table-responsive">
-    {% if reports %}
-        <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th class="text-secondary fw-semibold small text-uppercase">ID</th>
-                        <th class="text-secondary fw-semibold small text-uppercase">Category</th>
-                        <th class="text-secondary fw-semibold small text-uppercase">Urgency</th>
-                        <th class="text-secondary fw-semibold small text-uppercase">Location</th>
-                        <th class="text-secondary fw-semibold small text-uppercase">Time Received</th>
-                        <th class="text-secondary fw-semibold small text-uppercase">Status</th>
-                        <th class="text-secondary fw-semibold small text-uppercase text-end">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="border-top-0">
-                    {% for report in reports %}
-                        <tr {% if report.has_low_confidence %}class="table-warning bg-opacity-10"{% endif %}>
-                            <td>
-                                <code class="text-dark bg-secondary bg-opacity-10 px-2 py-1 rounded">{{ report.id|stringformat:"s"|slice:":8" }}</code>
-                                {% if report.has_low_confidence %}
-                                    <div class="mt-1">
-                                        <span class="badge bg-warning text-dark border border-warning"><i class="bi bi-exclamation-triangle me-1"></i>Low Confidence</span>
-                                    </div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge text-bg-{{ report.category|slugify }}">
-                                    {{ report.category|title }}
-                                </span>
-                                <span class="conf-badge conf-{{ report.confidence_tier }} ms-1"
-                                      title="Classifier confidence">
-                                    {{ report.confidence_pct|floatformat:0 }}%
-                                </span>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="fw-bold">{{ report.urgency_score }}</span>
-                                    <div class="progress" style="width: 60px; height: 6px;">
-                                        <div class="progress-bar {% if report.urgency_score >= 75 %}bg-danger{% elif report.urgency_score >= 50 %}bg-warning{% else %}bg-success{% endif %}" role="progressbar" style="width: {{ report.urgency_score }}%"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="text-secondary">{{ report.location_text|default:"—" }}</span>
-                            </td>
-                            <td>
-                                <span class="text-secondary small">
-                                    {{ report.raw_post.received_at|date:"M d, Y H:i" }}
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge status-{{ report.status|slugify }}">
-                                    {% if report.status == 'for_review' %}
-                                        ⚠ For Review
-                                    {% else %}
-                                        {{ report.status|title }}
-                                    {% endif %}
-                                </span>
-                            </td>
-                            <td class="text-end">
-                                <a href="{% url 'dashboard:report_detail' report.id %}" class="btn btn-sm btn-primary px-3 rounded-pill">
-                                    Review <i class="bi bi-arrow-right ms-1"></i>
-                                </a>
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+<!-- ── Report Cards ─────────────────────────────────────────────────────── -->
+{% if reports %}
+    {% for report in reports %}
+    <article class="report-card{% if report.urgency_score >= 7.5 %} report-card--emergency{% endif %}{% if report.has_low_confidence %} report-card--low-conf{% endif %}"
+             role="article"
+             aria-label="Report {{ report.id|stringformat:'s'|slice:':8' }}">
+
+        {# ── Top row: status badge (left) + urgency score (right) ─────── #}
+        <div class="report-card__top">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                {# Semantic status badge #}
+                {% if report.status == 'resolved' %}
+                    <span class="status-resolved">
+                        <i class="bi bi-check-circle-fill me-1"></i>Resolved
+                    </span>
+                {% elif report.status == 'dismissed' %}
+                    <span class="status-badge dismissed">Dismissed</span>
+                {% elif report.status == 'for_review' %}
+                    <span class="status-pending">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>For Review
+                    </span>
+                {% elif report.status == 'reported' %}
+                    <span class="status-pending">Pending</span>
+                {% elif report.status == 'acknowledged' %}
+                    <span class="status-badge acknowledged">Acknowledged</span>
+                {% elif report.status == 'in_progress' %}
+                    <span class="status-badge in-progress">In Progress</span>
+                {% else %}
+                    <span class="status-badge">{{ report.status|title }}</span>
+                {% endif %}
+
+                {# Low-confidence flag #}
+                {% if report.has_low_confidence %}
+                    <span class="low-confidence-tag" title="AI confidence below threshold — needs review">
+                        Low Confidence
+                    </span>
+                {% endif %}
+            </div>
+
+            {# Urgency score + mini bar #}
+            <div class="report-card__urgency">
+                <span class="report-card__urgency-label">Urgency</span>
+                <span class="{% if report.urgency_score >= 7.5 %}text-danger{% elif report.urgency_score >= 5.0 %}text-warning{% else %}text-success{% endif %}">
+                    {{ report.urgency_score }}<span class="text-muted fw-normal">/10</span>
+                </span>
+                <div class="urgency-bar" title="Urgency: {{ report.urgency_score }}/10">
+                    <div class="urgency-fill {% if report.urgency_score >= 7.5 %}critical{% elif report.urgency_score >= 5.0 %}warning{% else %}low{% endif %}"
+                         style="width: {{ report.urgency_score|floatformat:0 }}0%"></div>
+                </div>
+            </div>
         </div>
-    {% else %}
-        <div class="stat-card text-center py-5">
-            <p class="text-muted"><i class="bi bi-inbox" style="font-size: 2rem;"></i></p>
-            <p class="text-muted mt-3">No reports found. Try adjusting your filters.</p>
+
+        {# ── Middle: bold location heading ────────────────────────────── #}
+        <h2 class="report-card__location h6">
+            <i class="bi bi-geo-alt-fill text-primary"></i>
+            {{ report.location_text|default:"Location not identified" }}
+        </h2>
+
+        {# ── Category + confidence meta ────────────────────────────────── #}
+        <div class="report-card__meta">
+            <span class="cat-badge cat-{{ report.category }}">
+                {% if report.category == 'disaster_flooding' %}Flooding
+                {% elif report.category == 'transportation_traffic' %}Traffic
+                {% elif report.category == 'public_infrastructure' %}Infrastructure
+                {% elif report.category == 'public_safety' %}Public Safety
+                {% else %}{{ report.category|title }}
+                {% endif %}
+            </span>
+            <span class="conf-badge conf-{{ report.confidence_tier }}"
+                  title="Classifier confidence: {{ report.confidence_pct }}%">
+                {{ report.confidence_pct|floatformat:0 }}% confidence
+            </span>
         </div>
-    {% endif %}
-</div>
+
+        {# ── Body: post text preview (3-line clamp) ───────────────────── #}
+        <p class="report-card__preview">{{ report.raw_post.post_text|truncatechars:200 }}</p>
+
+        {# ── Footer: timestamp + action button ────────────────────────── #}
+        <div class="report-card__footer">
+            <div>
+                <span class="report-card__id">ID&nbsp;{{ report.id|stringformat:"s"|slice:":8" }}</span>
+                <span class="text-muted small ms-3">
+                    <i class="bi bi-clock me-1"></i>{{ report.raw_post.received_at|date:"M d, Y · g:i A" }}
+                </span>
+            </div>
+            <a href="{% url 'dashboard:report_detail' report.id %}"
+               class="btn btn-sm btn-primary px-3 rounded-pill">
+                Review <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </article>
+    {% endfor %}
+{% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-inbox text-muted" style="font-size: 2.5rem;"></i>
+        <p class="text-muted mt-3 mb-0">No reports found. Try adjusting your filters.</p>
+    </div>
+{% endif %}
 
 {% if is_paginated %}
     <nav aria-label="Page navigation" class="mt-4">

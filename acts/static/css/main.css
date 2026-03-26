@@ -38,18 +38,22 @@ body {
 }
 
 #wrapper {
-    height: 100vh;
-    overflow: hidden;
+    /* Sidebar is now position:fixed — wrapper itself needs no overflow constraint */
+    min-height: 100vh;
 }
 
 #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 280px;
     height: 100vh;
     overflow-y: auto;
-    background: #0f172a; /* Deep slate acting as premium command center */
-    border-right: 1px solid #1e293b; /* Subtle structural border */
+    z-index: 100;
+    background: #1A202C; /* Deep navy — command center */
+    border-right: 1px solid #2D3748;
     flex-shrink: 0;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05); /* Soft depth lift */
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
 }
 
 #sidebar .navbar-brand {
@@ -97,21 +101,25 @@ body {
 
 #sidebar .nav-link.active {
     color: #ffffff !important;
-    background-color: var(--acts-blue);
+    background-color: rgba(79, 144, 255, 0.14);
+    border-left: 4px solid #4F90FF;
+    border-radius: 0 0.5rem 0.5rem 0;
+    padding-left: calc(1.25rem - 4px); /* compensate for border width */
     font-weight: 600;
-    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); /* Premium active glow */
 }
 
 #main-content {
+    margin-left: 280px; /* matches fixed sidebar width */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    background-color: #F8F9FA;
 }
 
 main.container-fluid {
     flex: 1;
-    overflow-y: auto;
-    background-color: #f8fafc; /* Keep content area soft light */
+    background-color: #F8F9FA;
+    padding: 1.5rem !important;
 }
 
 
@@ -565,10 +573,10 @@ main.container-fluid {
 .map-container {
     width: 100%;
     height: 500px;
-    border-radius: 0.5rem;
-    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    border: 1px solid #E2E8F0;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
 #map {
@@ -595,15 +603,17 @@ main.container-fluid {
         width: 100%;
         height: auto;
         position: fixed;
+        top: auto;
         bottom: 0;
         left: 0;
         right: 0;
         border-right: none;
-        border-top: 1px solid #334155;
+        border-top: 1px solid #2D3748;
         z-index: 1000;
     }
 
     #main-content {
+        margin-left: 0;
         padding-bottom: 80px;
     }
 
@@ -862,5 +872,222 @@ main.container-fluid {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GOV-TECH DESIGN SYSTEM — Report Card Component & Status Badge System
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Global typography enforcement ──────────────────────────────────────── */
+body {
+    color: #2D3748; /* charcoal — never white-on-white */
+}
+
+/* ── Semantic status badge classes (spec §3) ────────────────────────────── */
+/* These complement the existing .status-badge.{slug} system.               */
+.status-pending {
+    display: inline-block;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background-color: #FEF3C7;
+    color: #78350F;
+    border: 1px solid #FCD34D;
+}
+
+.status-resolved {
+    display: inline-block;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background-color: #16a34a;
+    color: #ffffff;
+    border: 1px solid #16a34a;
+}
+
+.status-emergency {
+    display: inline-block;
+    padding: 0.3rem 0.65rem;
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    background-color: #dc2626;
+    color: #ffffff;
+    border: 1px solid #dc2626;
+}
+
+/* ── Category badge — full slug aliases ─────────────────────────────────── */
+/* Allows class="cat-badge cat-disaster_flooding" without template if-chains */
+.cat-badge {
+    display: inline-block;
+    padding: 0.275rem 0.6rem;
+    border-radius: 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: #ffffff;
+}
+.cat-disaster_flooding      { background-color: var(--category-disaster); }
+.cat-transportation_traffic { background-color: var(--category-transport); color: #1f2937; }
+.cat-public_infrastructure  { background-color: #EAB308; color: #1f2937; }
+.cat-public_safety          { background-color: var(--category-safety); }
+.cat-other,
+.cat-uncertain              { background-color: var(--category-other); }
+
+/* ── Report Card Component (spec §2) ────────────────────────────────────── */
+.report-card {
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #E2E8F0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.report-card:hover {
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.09);
+    transform: translateY(-2px);
+}
+
+/* High-urgency reports get a red left accent (≥7.5/10) */
+.report-card--emergency {
+    border-left: 4px solid var(--acts-red);
+}
+
+/* Low-confidence reports get a warm tint */
+.report-card--low-conf {
+    background-color: #FFFBEB;
+}
+
+/* Top row: status badge left, urgency right */
+.report-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    gap: 0.5rem;
+}
+
+/* Urgency score + mini bar */
+.report-card__urgency {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.report-card__urgency-label {
+    font-size: 0.7rem;
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-right: 0.15rem;
+}
+
+/* Middle: bold location heading */
+.report-card__location {
+    font-weight: 700;
+    color: #1A202C;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Inline meta row: category badge + confidence badge */
+.report-card__meta {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+}
+
+/* Body: report text preview */
+.report-card__preview {
+    color: #4A5568;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    margin-bottom: 0.9rem;
+    /* clamp to 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Footer: timestamp left, action button right */
+.report-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #F1F5F9;
+    gap: 0.5rem;
+}
+
+.report-card__id {
+    font-family: 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: #A0AEC0;
+    letter-spacing: 0.3px;
+}
+
+/* ── Top-bar styling ─────────────────────────────────────────────────────── */
+#main-content > nav.navbar {
+    background-color: #ffffff !important;
+    border-bottom: 1px solid #E2E8F0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+#main-content > nav .h5 {
+    color: #1A202C;
+}
+
+/* ── Sidebar brand area ──────────────────────────────────────────────────── */
+#sidebar .brand-logo {
+    color: #F7FAFC; /* near-white, never pure white against dark bg */
+}
+
+#sidebar .nav-link {
+    color: #A0AEC0 !important; /* slate-400 — readable on dark sidebar */
+}
+
+#sidebar .nav-link:hover {
+    color: #F7FAFC !important;
+    background-color: rgba(255, 255, 255, 0.07);
+}
+
+/* ── Responsive: single-column cards on mobile ───────────────────────────── */
+@media (max-width: 576px) {
+    .report-card {
+        padding: 1rem;
+        border-radius: 6px;
+    }
+
+    .report-card__footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .report-card__footer .btn {
+        width: 100%;
+        text-align: center;
     }
 }
