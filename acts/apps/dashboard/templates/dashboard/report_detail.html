@@ -10,6 +10,19 @@
 {% block content %}
 <div class="container-fluid py-4">
 
+    {% if report.status == 'for_review' %}
+    <div class="alert alert-warning border-warning d-flex align-items-start gap-3 mb-4" role="alert">
+        <span style="font-size:1.4rem;">⚠️</span>
+        <div>
+            <strong>Human Review Required</strong> — The AI classifier returned a confidence of
+            <strong>{{ report.confidence_pct|floatformat:0 }}%</strong>, below the
+            {{ report.confidence_threshold_pct }}% threshold.
+            The original prediction was stored in Routing Notes.
+            Please verify the category before acknowledging.
+        </div>
+    </div>
+    {% endif %}
+
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="h3">Report Detail</h1>
@@ -17,7 +30,7 @@
         </div>
         <div class="col-md-4 text-end">
             <span class="badge" id="status-badge">
-                {{ report.current_status|upper }}
+                {% if report.current_status == 'for_review' %}⚠ FOR REVIEW{% else %}{{ report.current_status|upper }}{% endif %}
             </span>
         </div>
     </div>
@@ -54,8 +67,8 @@
                         </div>
                         <div class="col-6">
                             <strong>Confidence:</strong><br>
-                            <span class="badge bg-info">
-                                {{ report.confidence|floatformat:0 }}%
+                            <span class="conf-badge conf-{{ report.confidence_tier }}">
+                                {{ report.confidence_pct|floatformat:0 }}%
                             </span>
                         </div>
                     </div>
@@ -95,20 +108,24 @@
                         </div>
                         <div class="col-md-6">
                             <strong>Confidence:</strong><br>
-                            {% widthratio report.confidence 1 100 as conf_percent %}
-                            {% widthratio report.confidence_threshold 1 100 as thresh_percent %}
                             <div class="confidence-progress">
-                                <div class="progress-bar {% if report.has_low_confidence %}bg-warning{% else %}bg-success{% endif %}"
+                                <div class="progress-bar
+                                     {% if report.confidence_tier == 'low' %}bg-danger
+                                     {% elif report.confidence_tier == 'medium' %}bg-warning
+                                     {% else %}bg-success{% endif %}"
                                      role="progressbar"
-                                     data-width="{{ conf_percent }}"
-                                     aria-valuenow="{{ conf_percent }}"
+                                     data-width="{{ report.confidence_pct|floatformat:0 }}"
+                                     style="width: {{ report.confidence_pct|floatformat:0 }}%"
+                                     aria-valuenow="{{ report.confidence_pct|floatformat:0 }}"
                                      aria-valuemin="0"
                                      aria-valuemax="100">
-                                    {{ report.confidence|floatformat:1 }}
+                                    {{ report.confidence_pct|floatformat:0 }}%
                                 </div>
                             </div>
                             {% if report.has_low_confidence %}
-                                <small class="low-confidence-warning">⚠ Below {{ thresh_percent }}% threshold</small>
+                                <small class="low-confidence-warning text-danger">
+                                    ⚠ Below {{ report.confidence_threshold_pct }}% threshold — human review required
+                                </small>
                             {% endif %}
                         </div>
                     </div>
@@ -265,8 +282,12 @@
 
                     <div class="row mt-3">
                         <div class="col-md-6">
-                            <button class="btn btn-outline-secondary w-100" type="button" data-bs-toggle="modal" data-bs-target="#overrideModal">
-                                <i class="bi bi-pencil"></i> Override
+                            <button class="btn btn-outline-primary w-100" type="button"
+                                    data-bs-toggle="modal" data-bs-target="#editReportModal">
+                                <i class="bi bi-pencil-square me-1"></i> Edit Report
+                                {% if report.is_manually_corrected %}
+                                    <span class="badge bg-success ms-1" title="Ground-truth — manually corrected">✓ GT</span>
+                                {% endif %}
                             </button>
                         </div>
                         <div class="col-md-6">
@@ -295,46 +316,7 @@
         </div>
     </div>
 
-    <!-- Section 7: Override Form (Collapsible) -->
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
-                    <h5 class="mb-0">
-                        <button class="btn btn-link text-decoration-none w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#overrideForm">
-                            Override Classification
-                        </button>
-                    </h5>
-                </div>
-                <div class="collapse" id="overrideForm">
-                    <div class="card-body">
-                        <form method="POST" action="{% url 'dashboard:override' report.pk %}">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="override-category" class="form-label">Category Override:</label>
-                                <select class="form-select" id="override-category" name="category">
-                                    <option value="">-- No Change --</option>
-                                    {% for cat in category_options %}
-                                        <option value="{{ cat }}" {% if cat == report.category %}selected{% endif %}>
-                                            {{ cat|upper }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="override-location" class="form-label">Location Override:</label>
-                                <input type="text" class="form-control" id="override-location" name="location_text"
-                                       placeholder="e.g., Barangay Sabang, Lipa City" value="{{ report.location_text }}">
-                            </div>
-
-                            <button type="submit" class="btn btn-warning">Apply Override</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {# Override form moved to #editReportModal — see modal below #}
 
     <!-- Section 8: Status History Timeline -->
     <div class="row mb-4">
@@ -407,18 +389,129 @@
 
 </div>
 
-<!-- Override Modal -->
-<div class="modal fade" id="overrideModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- ── Edit Report Modal ───────────────────────────────────────────────── -->
+<div class="modal fade" id="editReportModal" tabindex="-1" aria-labelledby="editReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Override Classification</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="editReportModalLabel">
+                    <i class="bi bi-pencil-square me-2 text-primary"></i>Edit Report
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body">
-                <p>Use overrides to correct automatic classification if needed. Document the reason for auditing purposes.</p>
-                <div id="override-form-in-modal"></div>
-            </div>
+
+            <form method="POST" action="{% url 'dashboard:override' report.pk %}" id="edit-report-form">
+                {% csrf_token %}
+                <div class="modal-body">
+
+                    {% if report.is_manually_corrected %}
+                    <div class="alert alert-success py-2 small mb-3">
+                        <i class="bi bi-check-circle me-1"></i>
+                        This report has been manually corrected and is flagged as <strong>ground-truth</strong> for model training.
+                    </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+
+                        <!-- Category -->
+                        <div class="col-md-6">
+                            <label for="edit-category" class="form-label fw-semibold">
+                                Category
+                                <span class="text-muted fw-normal small ms-1">
+                                    (AI: {{ report.category|title }},
+                                    {{ report.confidence_pct|floatformat:0 }}% confidence)
+                                </span>
+                            </label>
+                            <select class="form-select" id="edit-category" name="category">
+                                {% for cat in category_options %}
+                                    <option value="{{ cat }}"
+                                        {% if cat == report.category %}selected{% endif %}>
+                                        {{ cat|title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Urgency Score -->
+                        <div class="col-md-6">
+                            <label for="edit-urgency" class="form-label fw-semibold">
+                                Urgency Score:
+                                <span id="urgency-display" class="text-primary fw-bold">
+                                    {{ report.urgency_score|floatformat:0 }}
+                                </span>
+                                <span class="text-muted fw-normal small">/ 100</span>
+                            </label>
+                            <input type="range" class="form-range" id="edit-urgency"
+                                   name="urgency_score"
+                                   min="0" max="100" step="1"
+                                   value="{{ report.urgency_score|floatformat:0 }}">
+                            <div class="d-flex justify-content-between">
+                                <small class="text-success">Low</small>
+                                <small class="text-warning">Medium</small>
+                                <small class="text-danger">Critical</small>
+                            </div>
+                        </div>
+
+                        <!-- Location Name -->
+                        <div class="col-12">
+                            <label for="edit-location-text" class="form-label fw-semibold">Location Name</label>
+                            <input type="text" class="form-control" id="edit-location-text"
+                                   name="location_text"
+                                   value="{{ report.location_text|default:'' }}"
+                                   placeholder="e.g., Barangay Sabang, Lipa City">
+                        </div>
+
+                        <!-- Lat / Lng (read-only display, updated via map click) -->
+                        <div class="col-md-6">
+                            <label for="edit-lat" class="form-label fw-semibold">
+                                Latitude
+                                <small class="text-muted fw-normal">(click map to update)</small>
+                            </label>
+                            <input type="text" class="form-control font-monospace"
+                                   id="edit-lat" name="latitude"
+                                   value="{{ report.latitude|default:'' }}"
+                                   placeholder="e.g., 13.9420" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit-lng" class="form-label fw-semibold">Longitude</label>
+                            <input type="text" class="form-control font-monospace"
+                                   id="edit-lng" name="longitude"
+                                   value="{{ report.longitude|default:'' }}"
+                                   placeholder="e.g., 121.1628" readonly>
+                        </div>
+
+                        <!-- Click-to-pin Leaflet map -->
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-geo-alt text-danger me-1"></i>Pin Correct Location
+                            </label>
+                            <div id="edit-map"
+                                 data-lat="{{ report.latitude|default:'13.9420' }}"
+                                 data-lng="{{ report.longitude|default:'121.1628' }}"
+                                 style="height:280px;border-radius:8px;border:1px solid #dee2e6;">
+                            </div>
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Click anywhere on the map to pin the correct location.
+                                Drag the marker to fine-tune.
+                            </small>
+                        </div>
+
+                    </div><!-- /row -->
+                </div><!-- /modal-body -->
+
+                <div class="modal-footer border-top bg-light">
+                    <span class="me-auto small text-muted">
+                        <i class="bi bi-shield-check text-success me-1"></i>
+                        Saving will mark this report as <strong>ground-truth</strong>.
+                    </span>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-floppy me-1"></i>Save Corrections
+                    </button>
+                </div>
+            </form>
+
         </div>
     </div>
 </div>

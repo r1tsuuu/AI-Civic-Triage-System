@@ -3,7 +3,10 @@ from django.db import models
 from .exceptions import InvalidTransitionError
 
 class Report(models.Model):
+    CONFIDENCE_THRESHOLD = 0.65   # below this → for_review + uncertain
+
     VALID_TRANSITIONS = {
+        'for_review':   ['acknowledged', 'dismissed'],
         'reported':     ['acknowledged', 'dismissed'],
         'acknowledged': ['in_progress', 'dismissed'],
         'in_progress':  ['resolved', 'dismissed'],
@@ -22,16 +25,41 @@ class Report(models.Model):
     location_confidence = models.CharField(max_length=50, default="unresolved")
 
     STATUS_CHOICES = [
-        ('reported', 'Reported'),
+        ('for_review',   'For Review'),
+        ('reported',     'Reported'),
         ('acknowledged', 'Acknowledged'),
-        ('in_progress', 'In Progress'),
-        ('resolved', 'Resolved'),
-        ('dismissed', 'Dismissed'),
+        ('in_progress',  'In Progress'),
+        ('resolved',     'Resolved'),
+        ('dismissed',    'Dismissed'),
     ]
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='reported')
     routing_notes = models.TextField(blank=True)
+    is_manually_corrected = models.BooleanField(
+        default=False,
+        help_text="True once a moderator has saved any manual correction. "
+                  "Marks this record as ground-truth for future model training.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def confidence_pct(self):
+        """Classifier confidence as a 0–100 float for display."""
+        return round(self.classifier_confidence * 100, 1)
+
+    @property
+    def confidence_tier(self):
+        """'high' ≥80 %, 'medium' 65–79 %, 'low' <65 %."""
+        c = self.classifier_confidence
+        if c >= 0.80:
+            return 'high'
+        if c >= self.CONFIDENCE_THRESHOLD:
+            return 'medium'
+        return 'low'
+
+    @property
+    def has_low_confidence(self):
+        return self.classifier_confidence < self.CONFIDENCE_THRESHOLD
 
     def transition_to(self, new_status, moderator_name="demo"):
         allowed = self.VALID_TRANSITIONS.get(self.status, [])

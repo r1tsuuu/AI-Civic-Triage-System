@@ -100,11 +100,10 @@ class ReportListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        threshold = getattr(settings, 'NLP_CONFIDENCE_THRESHOLD', 0.65)
         for report in context['reports']:
-            report.has_low_confidence = report.classifier_confidence < threshold
-            # Template compatibility alias
-            report.confidence = report.classifier_confidence
+            # confidence_tier and confidence_pct drive the UI colour coding
+            report.confidence_pct  = round(report.classifier_confidence * 100, 1)
+            report.confidence_tier = report.confidence_tier  # model property
 
         context['category_filter'] = self.request.GET.get('category', '')
         context['status_filter'] = self.request.GET.get('status', '')
@@ -113,10 +112,10 @@ class ReportListView(ListView):
         context['date_to'] = self.request.GET.get('date_to', '')
         context['category_options'] = [
             'disaster_flooding', 'transportation_traffic', 'public_infrastructure',
-            'public_safety', 'other',
+            'public_safety', 'other', 'uncertain',
         ]
         context['status_options'] = [
-            'reported', 'acknowledged', 'in_progress', 'resolved', 'dismissed',
+            'for_review', 'reported', 'acknowledged', 'in_progress', 'resolved', 'dismissed',
         ]
         context['barangay_options'] = list(
             Report.objects
@@ -143,8 +142,8 @@ class ReportDetailView(DetailView):
 
         # Template compatibility aliases
         report.confidence = report.classifier_confidence
-        report.confidence_threshold = threshold
-        report.has_low_confidence = report.classifier_confidence < threshold
+        report.confidence_pct = round(report.classifier_confidence * 100, 1)
+        report.confidence_threshold_pct = int(Report.CONFIDENCE_THRESHOLD * 100)
         report.barangay = report.location_text or ''
         report.current_status = report.status
 
@@ -159,7 +158,7 @@ class ReportDetailView(DetailView):
         context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
         context['category_options'] = [
             'disaster_flooding', 'transportation_traffic', 'public_infrastructure',
-            'public_safety', 'other',
+            'public_safety', 'other', 'uncertain',
         ]
         context['corrections'] = report.corrections.all().order_by('-corrected_at')
         from apps.triage.scorer import compute_score_with_breakdown
@@ -435,14 +434,33 @@ class DismissReportView(_BaseStatusActionView):
 
 
 class OverrideReportView(View):
+    """
+    POST /dashboard/reports/<pk>/override/
+    Handles the Edit Report modal form.  Persists any changed fields,
+    logs category/location changes to CorrectionLog, and marks the
+    report as manually corrected (ground-truth for future training).
+    """
     http_method_names = ['post']
 
     def post(self, request, pk):
-        report = get_object_or_404(Report, pk=pk)
-        new_category = request.POST.get('category', '').strip()
-        new_location_text = request.POST.get('location_text', '').strip()
-        changes_made = []
+        from apps.dashboard.forms import ReportEditForm
 
+        report = get_object_or_404(Report, pk=pk)
+        form = ReportEditForm(request.POST)
+
+        if not form.is_valid():
+            error_str = '; '.join(
+                f"{f}: {', '.join(errs)}" for f, errs in form.errors.items()
+            )
+            messages.error(request, f"Could not save: {error_str}")
+            return redirect('dashboard:report_detail', pk=pk)
+
+        cd = form.cleaned_data
+        changes_made = []
+        update_fields = ['updated_at']
+
+        # ── Category ─────────────────────────────────────────────────────────
+        new_category = cd.get('category') or ''
         if new_category and new_category != report.category:
             CorrectionLog.objects.create(
                 report=report,
@@ -450,9 +468,18 @@ class OverrideReportView(View):
                 new_category=new_category,
             )
             report.category = new_category
-            report.save(update_fields=['category', 'updated_at'])
+            update_fields.append('category')
             changes_made.append('category')
 
+        # ── Urgency score ─────────────────────────────────────────────────────
+        new_urgency = cd.get('urgency_score')
+        if new_urgency is not None and new_urgency != report.urgency_score:
+            report.urgency_score = new_urgency
+            update_fields.append('urgency_score')
+            changes_made.append('urgency score')
+
+        # ── Location name ─────────────────────────────────────────────────────
+        new_location_text = cd.get('location_text') or ''
         if new_location_text and new_location_text != report.location_text:
             CorrectionLog.objects.create(
                 report=report,
@@ -460,17 +487,32 @@ class OverrideReportView(View):
                 new_location=new_location_text,
             )
             report.location_text = new_location_text
-            report.save(update_fields=['location_text', 'updated_at'])
-            changes_made.append('location_text')
+            update_fields.append('location_text')
+            changes_made.append('location name')
+
+        # ── Coordinates (lat + lng must arrive together) ──────────────────────
+        new_lat = cd.get('latitude')
+        new_lng = cd.get('longitude')
+        if new_lat is not None and new_lng is not None:
+            if new_lat != report.latitude or new_lng != report.longitude:
+                report.latitude = new_lat
+                report.longitude = new_lng
+                report.location_confidence = 'manual'
+                update_fields.extend(['latitude', 'longitude', 'location_confidence'])
+                changes_made.append('coordinates')
 
         if changes_made:
-            fields_text = ' and '.join(changes_made)
+            report.is_manually_corrected = True
+            update_fields.append('is_manually_corrected')
+            report.save(update_fields=update_fields)
+            label = ', '.join(changes_made)
             messages.success(
                 request,
-                f"Report {fields_text} {'was' if len(changes_made) == 1 else 'were'} updated.",
+                f"✓ Report corrected ({label}). Marked as ground-truth.",
+                extra_tags='mock-resolve',
             )
         else:
-            messages.warning(request, "No fields were updated.")
+            messages.warning(request, "No fields were changed.")
 
         return redirect('dashboard:report_detail', pk=pk)
 

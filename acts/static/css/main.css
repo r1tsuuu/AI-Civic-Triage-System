@@ -24,11 +24,17 @@ body {
     --category-other: #6B7280;
 
     /* Status Colors */
-    --status-reported: var(--bs-primary);
+    --status-for-review:  #D97706;
+    --status-reported:    var(--bs-primary);
     --status-acknowledged: #F59E0B;
     --status-in-progress: #8B5CF6;
-    --status-resolved: var(--bs-success);
-    --status-unresolved: var(--bs-danger);
+    --status-resolved:    var(--bs-success);
+    --status-unresolved:  var(--bs-danger);
+
+    /* Confidence tier colours */
+    --conf-high:   #16a34a;
+    --conf-medium: #d97706;
+    --conf-low:    #dc2626;
 }
 
 #wrapper {
@@ -172,6 +178,26 @@ main.container-fluid {
     color: var(--status-unresolved);
     border: 1px solid var(--status-unresolved);
 }
+
+/* ── For Review status ──────────────────────────────────────────── */
+.status-for-review {
+    background-color: rgba(217, 119, 6, 0.15);
+    color: var(--status-for-review);
+    border: 1px solid var(--status-for-review);
+}
+
+/* ── Confidence tier badges ─────────────────────────────────────── */
+.conf-badge {
+    font-size: 0.70rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.75rem;
+    letter-spacing: 0.3px;
+    vertical-align: middle;
+}
+.conf-badge.conf-high   { background: rgba(22, 163, 74, 0.12); color: var(--conf-high);   border: 1px solid var(--conf-high);   }
+.conf-badge.conf-medium { background: rgba(217,119, 6, 0.12); color: var(--conf-medium); border: 1px solid var(--conf-medium); }
+.conf-badge.conf-low    { background: rgba(220, 38, 38, 0.12); color: var(--conf-low);    border: 1px solid var(--conf-low);    }
 
 .category-badge {
     display: inline-block;
@@ -762,6 +788,10 @@ main.container-fluid {
 
 #status-badge[status="resolved"] {
     background-color: var(--status-resolved);
+}
+
+#status-badge[status="for-review"] {
+    background-color: var(--status-for-review);
 }
 
 /* Location map container */

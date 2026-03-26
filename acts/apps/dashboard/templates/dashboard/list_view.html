@@ -114,6 +114,10 @@
                                 <span class="badge text-bg-{{ report.category|slugify }}">
                                     {{ report.category|title }}
                                 </span>
+                                <span class="conf-badge conf-{{ report.confidence_tier }} ms-1"
+                                      title="Classifier confidence">
+                                    {{ report.confidence_pct|floatformat:0 }}%
+                                </span>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
@@ -133,7 +137,11 @@
                             </td>
                             <td>
                                 <span class="badge status-{{ report.status|slugify }}">
-                                    {{ report.status|title }}
+                                    {% if report.status == 'for_review' %}
+                                        ⚠ For Review
+                                    {% else %}
+                                        {{ report.status|title }}
+                                    {% endif %}
                                 </span>
                             </td>
                             <td class="text-end">
