@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar
 
-from django.views.generic import ListView, DetailView, TemplateView, View
+from django.views.generic import ListView, DetailView, View
 from django.utils import timezone
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -184,15 +184,11 @@ class ReportDetailView(DetailView):
         return context
 
 
-class MapView(TemplateView):
-    template_name = 'dashboard/map.html'
+class MapView(View):
+    """Legacy route: map is now merged into the Reports screen."""
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # Lipa City Hall per CONSTITUTION.md §14
-        context['map_center'] = {'lat': 13.9420, 'lng': 121.1628}
-        context['map_zoom'] = 14
-        return context
+    def get(self, request):
+        return redirect('dashboard:report_list')
 
 
 class ReportsGeoJSONView(View):

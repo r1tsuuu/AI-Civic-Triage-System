@@ -46,17 +46,9 @@
                     <li class="nav-item">
                         <a class="nav-link {% if 'report' in url_name|default:'' %}active{% endif %}"
                            href="{% url 'dashboard:report_list' %}"
-                           aria-label="Reports queue">
+                           aria-label="Reports">
                             <i class="bi bi-list-check"></i>
-                            Reports Queue
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if url_name == 'map_view' or url_name == 'map_data' %}active{% endif %}"
-                           href="{% url 'dashboard:map_view' %}"
-                           aria-label="Map view">
-                            <i class="bi bi-map-fill"></i>
-                            Map View
+                            Reports
                         </a>
                     </li>
                     <li class="nav-item">
