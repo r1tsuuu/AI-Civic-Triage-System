@@ -391,9 +391,18 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
+                <div class="card-header bg-transparent border-bottom border-light-subtle py-3 d-flex align-items-center justify-content-between">
                     <h5 class="mb-0">Status History</h5>
+                    <button class="btn btn-sm btn-outline-secondary d-md-none"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#status-history-collapse"
+                            aria-expanded="false"
+                            aria-controls="status-history-collapse">
+                        Show
+                    </button>
                 </div>
+                <div class="collapse d-md-block" id="status-history-collapse">
                 <div class="card-body">
                     {% if status_changes %}
                         <div class="timeline">
@@ -435,6 +444,7 @@
                             No status history yet. Status changes will appear here.
                         </div>
                     {% endif %}
+                </div>
                 </div>
             </div>
         </div>

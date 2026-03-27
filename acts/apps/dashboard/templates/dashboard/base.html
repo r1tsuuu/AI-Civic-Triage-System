@@ -51,7 +51,7 @@
                             Reports
                         </a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item nav-item-history">
                         <a class="nav-link {% if 'history' in url_name|default:'' %}active{% endif %}"
                            href="{% url 'dashboard:history' %}"
                            aria-label="Status history">
@@ -59,7 +59,7 @@
                             History
                         </a>
                     </li>
-                    <li class="nav-item mt-4 border-top pt-4">
+                    <li class="nav-item mt-4 border-top pt-4 nav-item-logout">
                         <a class="nav-link" style="color: #FC8181 !important;" href="{% url 'dashboard:logout' %}">
                             <i class="bi bi-box-arrow-right"></i>
                             Logout

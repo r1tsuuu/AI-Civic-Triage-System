@@ -611,7 +611,7 @@ main.container-fluid {
 @media (max-width: 768px) {
     #sidebar {
         width: 100%;
-        height: auto;
+        height: 64px;
         position: fixed;
         top: auto;
         bottom: 0;
@@ -620,26 +620,65 @@ main.container-fluid {
         border-right: none;
         border-top: 1px solid #2D3748;
         z-index: 1000;
+        overflow: hidden;
+        box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.22);
     }
 
     #main-content {
         margin-left: 0;
-        padding-bottom: 80px;
+        padding-bottom: 72px;
     }
 
     #sidebar .navbar-brand {
         display: none;
     }
 
-    #sidebar .navbar-nav {
-        flex-direction: row;
+    #sidebar .container-fluid {
+        height: 100%;
+        padding: 0 !important;
+    }
+
+    #sidebar .navbar-nav,
+    #sidebar .navbar-nav.flex-column {
+        flex-direction: row !important;
         justify-content: space-around;
+        align-items: stretch;
+        width: 100% !important;
+        margin: 0;
+        height: 100%;
+    }
+
+    #sidebar .nav-item {
+        padding: 0;
+        flex: 1 1 0;
+        margin: 0;
     }
 
     #sidebar .nav-link {
         margin-bottom: 0;
-        padding: 0.5rem 0.25rem;
-        font-size: 0.75rem;
+        padding: 0.45rem 0.2rem;
+        font-size: 0.72rem;
+        height: 100%;
+        border-radius: 0;
+        justify-content: center;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+
+    #sidebar .nav-link i {
+        font-size: 1rem;
+    }
+
+    #sidebar .nav-link.active {
+        border-left: none;
+        border-top: 3px solid var(--datum-blue);
+        padding-left: 0.2rem;
+    }
+
+    /* Keep mobile nav focused and avoid History confusion on Reports pages */
+    #sidebar .nav-item-history,
+    #sidebar .nav-item-logout {
+        display: none;
     }
 
     .stat-card,
