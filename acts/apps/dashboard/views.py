@@ -23,4 +23,4 @@ from .reports import (  # noqa: F401
     FlagReportView,
 )
 from .history import HistoryView, HistoryExportView  # noqa: F401
-from .public import LandingView, PublicGeoJSONView, PublicStatsView  # noqa: F401
+from .public import LandingView, PublicGeoJSONView, PublicStatsView, PublicRecentView  # noqa: F401

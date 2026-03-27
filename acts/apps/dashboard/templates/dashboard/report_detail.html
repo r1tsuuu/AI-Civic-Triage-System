@@ -258,7 +258,10 @@
                                               {% endif %}">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-primary">
-                                        Mark {{ next_status|upper|cut:"_" }}
+                                        {% if next_status == 'acknowledged' %}Mark as Acknowledged
+                                        {% elif next_status == 'in_progress' %}Mark as In Progress
+                                        {% elif next_status == 'resolved' %}Mark as Resolved
+                                        {% else %}{{ next_status|title }}{% endif %}
                                     </button>
                                 </form>
                                 {% endif %}
@@ -291,11 +294,14 @@
                                 {% endif %}
                             </button>
                         </div>
+                        {# Flag for Review — hidden for terminal statuses (resolved / dismissed) #}
+                        {% if report.current_status != 'resolved' and report.current_status != 'dismissed' %}
                         <div class="col-md-6">
                             <button class="btn btn-outline-warning w-100" type="button" data-bs-toggle="modal" data-bs-target="#flagModal">
                                 <i class="bi bi-flag"></i> Flag for Review
                             </button>
                         </div>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -172,6 +172,7 @@
         }
         .stat-num.green { color: #16a34a; }
         .stat-num.amber { color: #d97706; }
+        .stat-num.teal  { color: #0d9488; }
         .stat-label {
             font-size: 12px;
             color: var(--acts-muted);
@@ -192,6 +193,74 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50%       { opacity: .4; transform: scale(.7); }
         }
+
+        /* ── Recent reports feed ─────────────────────────── */
+        .recent-feed {
+            max-width: 1140px;
+            margin: 0 auto 48px;
+            padding: 0 16px;
+        }
+        .recent-feed-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--acts-navy);
+            margin: 0 0 16px;
+        }
+        .report-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+        .report-card {
+            background: var(--acts-white);
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 2px 10px rgba(0,0,0,.04);
+            border-left: 4px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .report-card.cat-disaster_flooding      { border-left-color: #dc2626; }
+        .report-card.cat-transportation_traffic { border-left-color: #ea580c; }
+        .report-card.cat-public_infrastructure  { border-left-color: #ca8a04; }
+        .report-card.cat-public_safety          { border-left-color: #7c3aed; }
+        .report-card.cat-other                  { border-left-color: #6b7280; }
+        .rc-top { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+        .rc-cat-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            color: white;
+        }
+        .rc-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+        .rc-status.resolved  { background: #dcfce7; color: #15803d; }
+        .rc-status.active    { background: #fef3c7; color: #92400e; }
+        .rc-status.dismissed { background: #f1f5f9; color: #64748b; }
+        .rc-location {
+            font-size: 13px;
+            color: var(--acts-text);
+            font-weight: 500;
+        }
+        .rc-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--acts-muted);
+        }
+        .rc-urgency { font-weight: 600; }
+        .rc-urgency.high   { color: #dc2626; }
+        .rc-urgency.medium { color: #d97706; }
+        .rc-urgency.low    { color: #16a34a; }
 
         /* ── Main layout ─────────────────────────────────── */
         .main-grid {
@@ -360,6 +429,10 @@
             <span class="stat-num" id="stat-total">—</span>
             <div class="stat-label">Total Reports</div>
         </div>
+        <div class="stat-cell">
+            <span class="stat-num teal" id="stat-rate">—</span>
+            <div class="stat-label">Resolution Rate</div>
+        </div>
     </div>
 </div>
 
@@ -423,6 +496,14 @@
             </div>
         </div>
 
+    </div>
+</div>
+
+<!-- Recent Reports feed -->
+<div class="recent-feed">
+    <div class="recent-feed-title">Recent Civic Reports</div>
+    <div class="report-cards" id="recent-cards">
+        <div style="font-size:13px;color:var(--acts-muted);padding:8px 0;">Loading recent reports…</div>
     </div>
 </div>
 
@@ -618,8 +699,65 @@ function loadStats() {
             setText('stat-resolved-today', d.resolved_today);
             setText('stat-active',         d.active_reports);
             setText('stat-total',          d.total_reports);
+            setText('stat-rate',           d.resolution_rate !== undefined ? d.resolution_rate + '%' : '—');
         })
         .catch(function(){});
+}
+
+// ── Load recent reports feed ──────────────────────────────────────
+const CAT_BG = {
+    disaster_flooding:      '#dc2626',
+    transportation_traffic: '#ea580c',
+    public_infrastructure:  '#ca8a04',
+    public_safety:          '#7c3aed',
+    other:                  '#6b7280',
+};
+
+function timeAgo(isoStr) {
+    if (!isoStr) return '';
+    const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+    if (diff < 60)    return diff + 's ago';
+    if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) {
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        return h + 'h' + (m ? ' ' + m + 'm' : '') + ' ago';
+    }
+    return Math.floor(diff / 86400) + 'd ago';
+}
+
+function loadRecent() {
+    fetch('/api/public/recent/')
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            const container = document.getElementById('recent-cards');
+            const reports = data.reports || [];
+            if (reports.length === 0) {
+                container.innerHTML = '<div style="font-size:13px;color:var(--acts-muted);padding:8px 0;">No reports yet.</div>';
+                return;
+            }
+            container.innerHTML = reports.map(function(r) {
+                const isResolved  = r.status === 'resolved';
+                const isDismissed = r.status === 'dismissed';
+                const statusClass = isResolved ? 'resolved' : isDismissed ? 'dismissed' : 'active';
+                const catBg = CAT_BG[r.category] || '#6b7280';
+                return '<div class="report-card cat-' + escHtml(r.category) + '">' +
+                    '<div class="rc-top">' +
+                        '<span class="rc-cat-badge" style="background:' + catBg + '">' + escHtml(r.category_label) + '</span>' +
+                        '<span class="rc-status ' + statusClass + '">' + escHtml(r.status_label) + '</span>' +
+                    '</div>' +
+                    '<div class="rc-location">📍 ' + escHtml(r.barangay) + '</div>' +
+                    '<div class="rc-meta">' +
+                        '<span class="rc-urgency ' + escHtml(r.urgency_tier) + '">' + escHtml(r.urgency_label) + '</span>' +
+                        '<span>' + timeAgo(r.created_at_iso) + '</span>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        })
+        .catch(function(){
+            const c = document.getElementById('recent-cards');
+            if (c) c.innerHTML = '<div style="font-size:13px;color:var(--acts-muted);">Could not load recent reports.</div>';
+        });
 }
 
 function setText(id, val) {
@@ -636,7 +774,9 @@ function escHtml(str) {
 // ── Boot ──────────────────────────────────────────────────────────
 loadMap();
 loadStats();
-setInterval(loadStats, 15000);  // refresh stats ticker every 15 s
+loadRecent();
+setInterval(loadStats,  15000);  // refresh stats ticker every 15 s
+setInterval(loadRecent, 30000);  // refresh recent feed every 30 s
 </script>
 </body>
 </html>

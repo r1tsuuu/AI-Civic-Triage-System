@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 from apps.dashboard.gate_views import gate_view
-from apps.dashboard.views import LandingView, PublicGeoJSONView, PublicStatsView
+from apps.dashboard.views import LandingView, PublicGeoJSONView, PublicStatsView, PublicRecentView
 
 
 def health(request):
@@ -20,4 +20,5 @@ urlpatterns = [
     path("", LandingView.as_view(), name="landing"),
     path("api/public/geojson/", PublicGeoJSONView.as_view(), name="public_geojson"),
     path("api/public/stats/", PublicStatsView.as_view(), name="public_stats"),
+    path("api/public/recent/", PublicRecentView.as_view(), name="public_recent"),
 ]
