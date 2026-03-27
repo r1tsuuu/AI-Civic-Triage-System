@@ -151,8 +151,99 @@
     }
 
     @media (max-width: 900px) {
+        #reports-layout {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 132px);
+            margin: -1rem;
+        }
+
+        #reports-layout .split-map {
+            order: 1;
+            height: 48vh;
+            min-height: 300px;
+            border-bottom: 1px solid #D6D1C4;
+        }
+
+        #reports-layout .split-queue {
+            order: 2;
+            flex: 1 1 auto;
+            min-height: 220px;
+            border-right: none;
+        }
+
+        #reports-layout.split-layout--map-focus .split-map {
+            height: calc(100vh - 132px);
+            min-height: calc(100vh - 132px);
+            border-bottom: none;
+        }
+
+        #reports-layout.split-layout--map-focus .split-queue {
+            display: none;
+        }
+
         .queue-search-row {
             grid-template-columns: 1fr;
+        }
+
+        .queue-toolbar-top {
+            align-items: center;
+        }
+
+        .queue-actions .btn,
+        .queue-actions .queue-filters-toggle {
+            font-size: 11px;
+            padding: 4px 8px;
+        }
+
+        .split-queue-header {
+            position: sticky;
+            top: 0;
+            z-index: 25;
+        }
+
+        .aq-card {
+            padding: 0.55rem 0.7rem;
+        }
+
+        .aq-summary {
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
+        .aq-review-btn {
+            padding: 0.25rem 0.55rem !important;
+            font-size: 12px;
+        }
+
+        .map-status-chip {
+            top: 8px;
+            right: 8px;
+            font-size: 11px;
+            padding: 5px 8px;
+        }
+
+        .map-focus-toggle {
+            top: 44px;
+            left: 8px;
+            font-size: 11px;
+            padding: 5px 8px;
+        }
+
+        .unresolved-box {
+            top: 74px;
+            right: 8px;
+            left: 8px;
+            width: auto;
+            max-height: 150px;
+        }
+
+        .map-pin-legend {
+            left: 8px;
+            bottom: 8px;
+            font-size: 11px;
+            padding: 6px 9px;
+            line-height: 1.5;
         }
     }
 </style>
@@ -441,6 +532,7 @@ const reportsLayout = document.getElementById('reports-layout');
 const mapFocusToggle = document.getElementById('map-focus-toggle');
 const queueFiltersToggle = document.getElementById('queue-filters-toggle');
 const advancedFilters = document.getElementById('advanced-filters');
+const isMobileViewport = () => window.matchMedia('(max-width: 900px)').matches;
 
 function setMapFocus(isFocused) {
     reportsLayout.classList.toggle('split-layout--map-focus', isFocused);
@@ -453,6 +545,9 @@ function setMapFocus(isFocused) {
 const savedFocus = localStorage.getItem('acts_reports_map_focus') === '1';
 if (savedFocus) {
     setMapFocus(true);
+} else if (isMobileViewport()) {
+    // Mobile-first: prioritize map space unless user previously chose otherwise.
+    setMapFocus(true);
 }
 
 mapFocusToggle.addEventListener('click', () => {
@@ -464,6 +559,11 @@ queueFiltersToggle.addEventListener('click', () => {
     const open = advancedFilters.classList.toggle('open');
     queueFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     queueFiltersToggle.textContent = open ? 'Hide filters' : 'Show filters';
+});
+
+window.addEventListener('resize', () => {
+    // Keep map sizing correct when rotating phones / resizing viewport.
+    setTimeout(() => qMap.invalidateSize(), 120);
 });
 
 fetch(DATA_URL)
