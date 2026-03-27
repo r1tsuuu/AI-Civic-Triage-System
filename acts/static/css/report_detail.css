@@ -4,6 +4,23 @@
     border-radius: 0.375rem;
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+.section-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.section-card .card-body,
+.section-card .accordion-body {
+    overflow: auto;
+}
+
 .urgency-badge {
     font-weight: 600;
     padding: 0.375rem 0.75rem;
@@ -278,6 +295,7 @@
 .timeline {
     position: relative;
     padding: 1.5rem 0 1.5rem 3rem;
+    overflow: auto;
 }
 
 .timeline::before {
@@ -374,6 +392,21 @@
 
 
 @media (max-width: 768px) {
+    .section-card .card-body,
+    .section-card .accordion-body {
+        padding: 1rem;
+    }
+
+    .progress-stepper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 6px;
+    }
+
+    .progress-stepper .stepper-step {
+        min-width: 126px;
+    }
+
     .confidence-progress {
         height: 20px;
     }

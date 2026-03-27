@@ -385,6 +385,8 @@
                                 <span class="aq-status aq-status--ack">Acknowledged</span>
                             {% elif report.status == 'in_progress' %}
                                 <span class="aq-status aq-status--progress">In Progress</span>
+                            {% else %}
+                                <span class="aq-status aq-status--ack">{{ report.status|title }}</span>
                             {% endif %}
                             {% if report.has_low_confidence %}
                                 <span class="conf-badge conf-low" style="font-size:0.67rem;">Low Confidence</span>
