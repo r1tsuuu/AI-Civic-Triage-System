@@ -7,6 +7,14 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" />
 <style>
+    .split-layout.split-layout--map-focus {
+        grid-template-columns: 0 1fr;
+    }
+
+    .split-layout.split-layout--map-focus .split-queue {
+        display: none;
+    }
+
     .map-status-chip {
         position: absolute;
         top: 10px;
@@ -19,6 +27,27 @@
         font-size: 12px;
         color: #475569;
         font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .map-focus-toggle {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 420;
+        border: 1px solid #D6D1C4;
+        background: rgba(255,255,255,0.95);
+        color: #1C2438;
+        border-radius: 3px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.2;
+        cursor: pointer;
+    }
+
+    .map-focus-toggle:hover {
+        border-color: #0E4C8B;
+        color: #0E4C8B;
     }
 
     .unresolved-box {
@@ -62,7 +91,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="split-layout">
+<div class="split-layout" id="reports-layout">
 
     <!-- ── Left panel: scrollable report queue ─────────────────── -->
     <div class="split-queue">
@@ -72,24 +101,24 @@
             <form method="get" id="filter-form">
                 <!-- Category tokens -->
                 <div class="filter-tokens mb-2">
-                    <a href="{% url 'dashboard:report_list' %}{% if status_filter %}?status={{ status_filter }}{% endif %}"
+                    <a href="{% url 'dashboard:report_list' %}?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if barangay_filter %}barangay={{ barangay_filter|urlencode }}&{% endif %}{% if message_filter %}q={{ message_filter|urlencode }}&{% endif %}"
                        class="filter-token {% if not category_filter %}active{% endif %}">All</a>
-                    <a href="?category=disaster_flooding{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                    <a href="?category=disaster_flooding{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if category_filter == 'disaster_flooding' %}active{% endif %}"
                        style="{% if category_filter == 'disaster_flooding' %}{% else %}border-color:#C8382A;color:#C8382A;{% endif %}">
                         Flooding
                     </a>
-                    <a href="?category=transportation_traffic{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                    <a href="?category=transportation_traffic{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if category_filter == 'transportation_traffic' %}active{% endif %}"
                        style="{% if category_filter == 'transportation_traffic' %}{% else %}border-color:#C47D1E;color:#C47D1E;{% endif %}">
                         Traffic
                     </a>
-                    <a href="?category=public_infrastructure{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                    <a href="?category=public_infrastructure{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if category_filter == 'public_infrastructure' %}active{% endif %}"
                        style="{% if category_filter == 'public_infrastructure' %}{% else %}border-color:#0E4C8B;color:#0E4C8B;{% endif %}">
                         Infrastructure
                     </a>
-                    <a href="?category=public_safety{% if status_filter %}&status={{ status_filter }}{% endif %}"
+                    <a href="?category=public_safety{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if category_filter == 'public_safety' %}active{% endif %}"
                        style="{% if category_filter == 'public_safety' %}{% else %}border-color:#5C3B7E;color:#5C3B7E;{% endif %}">
                         Safety
@@ -99,14 +128,34 @@
                 <!-- Status tokens -->
                 <div class="filter-tokens">
                     <span class="queue-count-strip me-2">{{ page_obj.paginator.count }} report{{ page_obj.paginator.count|pluralize }}</span>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=reported"
+                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=reported{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if status_filter == 'reported' %}active{% endif %}">Pending</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=for_review"
+                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=for_review{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if status_filter == 'for_review' %}active{% endif %}">For Review</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=in_progress"
+                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=in_progress{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if status_filter == 'in_progress' %}active{% endif %}">In Progress</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=resolved"
+                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=resolved{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
                        class="filter-token {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
+                </div>
+                <div class="filter-tokens mt-2">
+                    <select name="barangay" class="form-select form-select-sm" style="max-width: 170px;">
+                        <option value="">All barangays</option>
+                        {% for b in barangay_options %}
+                            <option value="{{ b }}" {% if b == barangay_filter %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                    <input
+                        type="text"
+                        name="q"
+                        class="form-control form-control-sm"
+                        style="max-width: 220px;"
+                        placeholder="Search report message…"
+                        value="{{ message_filter }}"
+                    >
+                    {% if category_filter %}<input type="hidden" name="category" value="{{ category_filter }}">{% endif %}
+                    {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+                    <button type="submit" class="btn btn-sm btn-outline-primary">Apply</button>
+                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}{% endif %}" class="btn btn-sm btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
@@ -229,7 +278,7 @@
                     <ul class="pagination pagination-sm justify-content-center">
                         {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Prev</a>
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}">Prev</a>
                             </li>
                         {% endif %}
                         {% for num in page_obj.paginator.page_range %}
@@ -237,13 +286,13 @@
                                 <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                             {% elif num >= page_obj.number|add:"-2" and num <= page_obj.number|add:"2" %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ num }}</a>
+                                    <a class="page-link" href="?page={{ num }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}">{{ num }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}
                         {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">Next</a>
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if category_filter %}&category={{ category_filter }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}">Next</a>
                             </li>
                         {% endif %}
                     </ul>
@@ -261,6 +310,9 @@
 
     <!-- ── Right panel: map + detail drawer ───────────────────── -->
     <div class="split-map">
+        <button type="button" id="map-focus-toggle" class="map-focus-toggle" aria-expanded="true">
+            Focus map
+        </button>
         <div id="map-status" class="map-status-chip">Loading reports…</div>
         <div id="queue-map"></div>
         <div id="unresolved-box" class="unresolved-box d-none">
@@ -345,6 +397,16 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const clusterGroup = L.markerClusterGroup({ maxClusterRadius: 40 });
 qMap.addLayer(clusterGroup);
+
+const reportsLayout = document.getElementById('reports-layout');
+const mapFocusToggle = document.getElementById('map-focus-toggle');
+mapFocusToggle.addEventListener('click', () => {
+    reportsLayout.classList.toggle('split-layout--map-focus');
+    const listVisible = !reportsLayout.classList.contains('split-layout--map-focus');
+    mapFocusToggle.setAttribute('aria-expanded', listVisible ? 'true' : 'false');
+    mapFocusToggle.textContent = listVisible ? 'Focus map' : 'Show reports';
+    setTimeout(() => qMap.invalidateSize(), 130);
+});
 
 fetch(DATA_URL)
     .then(r => r.json())

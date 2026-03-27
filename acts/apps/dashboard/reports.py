@@ -91,6 +91,7 @@ class ReportListView(ListView):
         category_filter = self.request.GET.get('category')
         status_filter = self.request.GET.get('status')
         barangay_filter = self.request.GET.get('barangay')
+        message_filter = self.request.GET.get('q', '').strip()
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
 
@@ -100,6 +101,8 @@ class ReportListView(ListView):
             qs = qs.filter(status=status_filter)
         if barangay_filter:
             qs = qs.filter(location_text__icontains=barangay_filter)
+        if message_filter:
+            qs = qs.filter(raw_post__post_text__icontains=message_filter)
         if date_from:
             try:
                 from_date = timezone.datetime.fromisoformat(date_from)
@@ -122,6 +125,7 @@ class ReportListView(ListView):
         context['category_filter'] = self.request.GET.get('category', '')
         context['status_filter'] = self.request.GET.get('status', '')
         context['barangay_filter'] = self.request.GET.get('barangay', '')
+        context['message_filter'] = self.request.GET.get('q', '')
         context['date_from'] = self.request.GET.get('date_from', '')
         context['date_to'] = self.request.GET.get('date_to', '')
         context['category_options'] = ALL_CATEGORIES
