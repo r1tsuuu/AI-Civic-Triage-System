@@ -110,11 +110,25 @@ fetch(DATA_URL)
             const pulse = p.urgency_score >= 7.0 && p.status !== 'resolved' && p.status !== 'dismissed';
             const marker = L.marker([lat, lng], { icon: circleIcon(colorFor(p.category), pulse) });
             marker.bindPopup(`
-                <div style="min-width:180px">
-                    <div class="fw-semibold mb-1">${labelFor(p.category)}</div>
-                    <div class="mb-1"><small class="text-muted">Urgency:</small> <strong>${p.urgency_score}</strong> &nbsp; <small class="text-muted">Status:</small> <strong>${p.status}</strong></div>
-                    <div class="mb-2 text-secondary small">${p.message_preview}</div>
-                    <a href="${REPORT_BASE}${p.id}/" class="btn btn-sm btn-primary w-100">View Report →</a>
+                <div style="min-width:200px;font-size:13px;">
+                    <div style="font-weight:700;margin-bottom:6px;">${labelFor(p.category)}</div>
+                    <div style="margin-bottom:4px;">
+                        <span style="color:#64748b;font-size:11px;">URGENCY</span>
+                        <strong style="color:${p.urgency_score>=7?'#dc2626':p.urgency_score>=5?'#d97706':'#16a34a'}">
+                            ${p.urgency_score}/10
+                        </strong>
+                        &ensp;
+                        <span style="color:#64748b;font-size:11px;">CONFIDENCE</span>
+                        <strong>${p.confidence_pct}%</strong>
+                        &ensp;
+                        <span style="color:#64748b;font-size:11px;">STATUS</span>
+                        <strong>${p.status.replace('_',' ').toUpperCase()}</strong>
+                    </div>
+                    <div style="margin-bottom:8px;color:#475569;font-size:12px;">${p.message_preview}</div>
+                    <a href="${REPORT_BASE}${p.id}/"
+                       style="display:block;background:#2563eb;color:#fff;text-align:center;padding:5px 10px;border-radius:5px;text-decoration:none;font-weight:600;font-size:12px;">
+                        View Full Report →
+                    </a>
                 </div>
             `);
             clusterGroup.addLayer(marker);

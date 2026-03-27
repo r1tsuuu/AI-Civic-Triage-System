@@ -9,7 +9,6 @@ ALL_CATEGORIES: list[str] = [
     'public_infrastructure',
     'public_safety',
     'other',
-    'uncertain',
 ]
 
 CATEGORY_LABELS: dict[str, str] = {
@@ -18,7 +17,6 @@ CATEGORY_LABELS: dict[str, str] = {
     'public_infrastructure':  'Infrastructure',
     'public_safety':          'Public Safety',
     'other':                  'Other',
-    'uncertain':              'Uncertain',
 }
 
 ALL_STATUSES: list[str] = [

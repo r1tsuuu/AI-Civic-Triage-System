@@ -34,13 +34,17 @@ def process_post(raw_post):
         score = compute_score(text, has_image=has_image, reaction_count=reaction_count)
 
         # ── Confidence gate ──────────────────────────────────────────────────
+        # Keep the AI's best-guess category even for low-confidence reports.
+        # The `for_review` status and routing_notes tell the moderator it needs
+        # verification — displaying "uncertain" discards the prediction and
+        # makes the queue harder to act on.
         if clf_conf < Report.CONFIDENCE_THRESHOLD:
             initial_status = "for_review"
-            initial_category = "uncertain"
+            initial_category = category  # retain AI prediction, not "uncertain"
             routing_notes = (
                 f"Low confidence: {clf_conf * 100:.1f}% "
                 f"(threshold {Report.CONFIDENCE_THRESHOLD * 100:.0f}%). "
-                f"Original prediction: {category}. Awaiting human review."
+                f"AI prediction: {category}. Awaiting human review."
             )
             logger.info(
                 "Low-confidence classification for post %s: %s (%.1f%%) → for_review",

@@ -304,12 +304,22 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-header bg-transparent border-bottom border-light-subtle py-3">
+                <div class="card-header bg-transparent border-bottom border-light-subtle py-3 d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Routing Notes</h5>
+                    <small class="text-muted" id="notes-saved-indicator"></small>
                 </div>
                 <div class="card-body">
-                    <textarea class="form-control" id="routing-notes" rows="3" placeholder="Add internal notes for coordination...">{{ report.routing_notes }}</textarea>
-                    <button class="btn btn-sm btn-primary mt-2" onclick="saveRoutingNotes()">Save Notes</button>
+                    <textarea class="form-control"
+                              id="routing-notes"
+                              rows="3"
+                              placeholder="Add internal notes for coordination..."
+                              data-report-id="{{ report.id }}"
+                              data-save-url="{% url 'dashboard:save_notes' report.id %}">{{ report.routing_notes }}</textarea>
+                    <button class="btn btn-sm btn-primary mt-2"
+                            id="save-notes-btn"
+                            onclick="saveRoutingNotes()">
+                        <i class="bi bi-floppy me-1"></i>Save Notes
+                    </button>
                 </div>
             </div>
         </div>
@@ -317,7 +327,59 @@
 
     {# Override form moved to #editReportModal — see modal below #}
 
-    <!-- Section 8: Status History Timeline -->
+    <!-- Section 8: Automated Reply Status -->
+    {% if auto_reply_record %}
+    <div class="row mb-4">
+        <div class="col-md-8">
+            {% if auto_reply_record.graph_api_success %}
+            <div class="card border-success border-opacity-50">
+                <div class="card-header bg-success bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                    <strong class="text-success">Automated Response Sent</strong>
+                    <span class="text-muted small ms-auto">
+                        {{ auto_reply_record.sent_at|date:"M d, Y · g:i A" }}
+                    </span>
+                </div>
+                <div class="card-body py-3">
+                    <p class="mb-0 fst-italic text-secondary">
+                        "{{ auto_reply_record.reply_text }}"
+                    </p>
+                </div>
+            </div>
+            {% else %}
+            <div class="card border-danger border-opacity-50">
+                <div class="card-header bg-danger bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                    <strong class="text-danger">⚠ Reply Failed</strong>
+                </div>
+                <div class="card-body py-3">
+                    <p class="mb-0 text-danger small">
+                        {{ auto_reply_record.error_message|default:"Unknown error — check server logs." }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% elif report.status == 'in_progress' %}
+    <!-- Preview the reply that will be sent when resolved -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card border-info border-opacity-50">
+                <div class="card-header bg-info bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-chat-dots-fill text-info"></i>
+                    <strong>Automated Response Preview</strong>
+                    <span class="text-muted small ms-1">— sent automatically when you resolve this report</span>
+                </div>
+                <div class="card-body py-3">
+                    <p class="mb-0 fst-italic text-secondary">{{ simulated_reply_preview }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Section 9: Status History Timeline -->
     <div class="row mb-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm rounded-3">
@@ -339,9 +401,21 @@
                                         </div>
                                         <p class="mb-1">{{ change.note }}</p>
                                         <small class="text-muted">by {{ change.changed_by }}</small>
-                                        {% if change.to_status == 'resolved' %}
+                                        {% if change.to_status == 'resolved' and auto_reply_record %}
                                         <div class="d-flex align-items-center gap-2 mt-2">
-                                            <span class="badge bg-success">✓ Simulated response sent</span>
+                                            {% if auto_reply_record.graph_api_success %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>AutoReply sent
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Reply failed
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                        {% elif change.to_status == 'resolved' %}
+                                        <div class="d-flex align-items-center gap-2 mt-2">
+                                            <span class="badge bg-secondary">AutoReply pending…</span>
                                         </div>
                                         {% endif %}
                                     </div>
@@ -357,34 +431,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Section 9: Simulated response preview -->
-    {% if report.status == 'in_progress' or report.status == 'resolved' %}
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <div class="card border-info">
-                <div class="card-header bg-info bg-opacity-10 d-flex align-items-center gap-2">
-                    <i class="bi bi-chat-dots-fill text-info"></i>
-                    <strong>
-                        {% if report.status == 'resolved' %}
-                            Simulated Response Sent
-                        {% else %}
-                            Simulated Response Preview
-                        {% endif %}
-                    </strong>
-                    <span class="text-muted small ms-1">
-                        {% if report.status == 'in_progress' %}
-                            — This message will be shown when you resolve this report
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="card-body">
-                    <p class="mb-0 fst-italic text-secondary">{{ simulated_reply_preview }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 
 </div>
 

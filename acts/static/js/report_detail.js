@@ -135,12 +135,66 @@ function initUrgencySlider() {
     slider.dispatchEvent(new Event('input'));
 }
 
-// ── Misc stubs called by inline onclick in the template ───────────────────────
+// ── CSRF helper ───────────────────────────────────────────────────────────────
+function getCsrfToken() {
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+    return cookie ? decodeURIComponent(cookie.trim().slice('csrftoken='.length)) : '';
+}
+
+// ── 5. Save Routing Notes via AJAX ────────────────────────────────────────────
 function saveRoutingNotes() {
-    const el = document.getElementById('routing-notes');
-    if (!el) return;
-    // Routing notes are saved server-side; this stub prevents JS errors
-    // if the button is wired to this function by older template code.
+    const textarea = document.getElementById('routing-notes');
+    const btn      = document.getElementById('save-notes-btn');
+    const indicator = document.getElementById('notes-saved-indicator');
+    if (!textarea) return;
+
+    const saveUrl = textarea.getAttribute('data-save-url');
+    if (!saveUrl) return;
+
+    const originalHTML = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Saving…';
+    }
+
+    fetch(saveUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: 'routing_notes=' + encodeURIComponent(textarea.value),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            if (indicator) {
+                indicator.textContent = '✓ Saved';
+                indicator.className = 'text-success small';
+                setTimeout(function() { indicator.textContent = ''; }, 3000);
+            }
+            if (btn) {
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Saved';
+                btn.className = btn.className.replace('btn-primary', 'btn-success');
+                setTimeout(function() {
+                    btn.innerHTML = originalHTML;
+                    btn.className = btn.className.replace('btn-success', 'btn-primary');
+                    btn.disabled = false;
+                }, 2000);
+            }
+        }
+    })
+    .catch(function(err) {
+        console.error('saveRoutingNotes failed:', err);
+        if (btn) {
+            btn.innerHTML = originalHTML;
+            btn.disabled = false;
+        }
+        if (indicator) {
+            indicator.textContent = '⚠ Save failed';
+            indicator.className = 'text-danger small';
+        }
+    });
 }
 
 function submitFlag() {

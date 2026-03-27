@@ -30,6 +30,7 @@ urlpatterns = [
     path("reports/<uuid:pk>/resolve/", views.ResolveReportView.as_view(), name="resolve"),
     path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="dismiss"),
     path("reports/<uuid:pk>/override/", views.OverrideReportView.as_view(), name="override"),
+    path("reports/<uuid:pk>/notes/", views.SaveRoutingNotesView.as_view(), name="save_notes"),
 
     # History
     path("history/", views.HistoryView.as_view(), name="history"),

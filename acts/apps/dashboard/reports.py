@@ -164,6 +164,9 @@ class ReportDetailView(DetailView):
         context['simulated_reply_preview'] = reply_text
         context['auto_reply'] = reply_text
 
+        # Fetch the most recent AutoReply record (created when moderator resolves)
+        context['auto_reply_record'] = report.auto_replies.first()
+
         context['available_next_statuses'] = Report.VALID_TRANSITIONS.get(report.status, [])
         context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
         context['category_options'] = ALL_CATEGORIES
@@ -206,6 +209,7 @@ class ReportsGeoJSONView(View):
                         'lng': r.longitude,
                         'category': r.category,
                         'urgency_score': r.urgency_score,
+                        'confidence_pct': round(r.classifier_confidence * 100),
                         'status': r.status,
                         'message_preview': preview,
                     },
@@ -261,20 +265,29 @@ class ResolveReportView(_BaseStatusActionView):
         except InvalidTransitionError as exc:
             messages.error(request, str(exc))
         else:
+            # Create MockComment for the public portal feed
             if report.raw_post_id:
-                from apps.mock_fb.models import MockComment
-                MockComment.objects.create(
-                    raw_post_id=report.raw_post_id,
-                    author="Lipa City LGU Official",
-                    text=(
-                        "Hello! This is the LGU Automated System. "
-                        "Our team has addressed this issue. "
-                        "Thank you for reporting!"
-                    ),
-                )
+                try:
+                    from apps.mock_fb.models import MockComment
+                    MockComment.objects.create(
+                        raw_post_id=report.raw_post_id,
+                        author="Lipa City LGU Official",
+                        text=(
+                            "Hello! This is the LGU Automated System. "
+                            "Our team has addressed this issue. "
+                            "Thank you for reporting!"
+                        ),
+                    )
+                except Exception:
+                    pass  # portal feed is non-critical
+
+            # Fire automated reply (creates AutoReply record) in background thread
+            from apps.response.sender import send_reply_async
+            send_reply_async(report)
+
             messages.success(
                 request,
-                "Success! A simulated response has been sent to the citizen's Facebook thread.",
+                "Report resolved. Automated response sent to citizen.",
                 extra_tags="mock-resolve",
             )
         return redirect('dashboard:report_detail', pk=pk)
@@ -384,3 +397,19 @@ class OverrideReportView(View):
             messages.warning(request, "No fields were changed.")
 
         return redirect('dashboard:report_detail', pk=pk)
+
+
+class SaveRoutingNotesView(View):
+    """
+    POST /dashboard/reports/<pk>/notes/
+    Saves the moderator's internal routing notes for a report via AJAX.
+    Returns JSON {ok: true} on success.
+    """
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        notes = request.POST.get('routing_notes', '').strip()
+        report.routing_notes = notes
+        report.save(update_fields=['routing_notes', 'updated_at'])
+        return JsonResponse({'ok': True})
