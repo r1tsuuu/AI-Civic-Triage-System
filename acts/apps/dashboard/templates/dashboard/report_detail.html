@@ -348,28 +348,14 @@
                     </p>
                 </div>
             </div>
-            {% elif "META_PAGE_ACCESS_TOKEN" in auto_reply_record.error_message %}
-            <div class="card border-secondary border-opacity-25">
-                <div class="card-header bg-secondary bg-opacity-10 d-flex align-items-center gap-2 py-2">
-                    <i class="bi bi-robot text-secondary fs-5"></i>
-                    <strong class="text-secondary">Simulated — Demo Mode</strong>
-                    <span class="badge bg-secondary ms-auto fw-normal">No live token</span>
-                </div>
-                <div class="card-body py-3">
-                    <p class="mb-1 fst-italic text-secondary">"{{ auto_reply_record.reply_text }}"</p>
-                    <small class="text-muted">
-                        Set <code>META_PAGE_ACCESS_TOKEN</code> in <code>.env</code> to enable real Facebook replies.
-                    </small>
-                </div>
-            </div>
             {% else %}
-            <div class="card border-danger border-opacity-50">
-                <div class="card-header bg-danger bg-opacity-10 d-flex align-items-center gap-2 py-2">
-                    <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-                    <strong class="text-danger">Reply Failed</strong>
+            <div class="card border-warning border-opacity-50">
+                <div class="card-header bg-warning bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-exclamation-circle text-warning fs-5"></i>
+                    <strong class="text-warning">Reply Not Sent</strong>
                 </div>
                 <div class="card-body py-3">
-                    <p class="mb-0 text-danger small">
+                    <p class="mb-0 text-muted small">
                         {{ auto_reply_record.error_message|default:"Unknown error — check server logs." }}
                     </p>
                 </div>
@@ -423,13 +409,9 @@
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-check-circle-fill me-1"></i>AutoReply sent
                                                 </span>
-                                            {% elif "META_PAGE_ACCESS_TOKEN" in auto_reply_record.error_message %}
-                                                <span class="badge bg-secondary">
-                                                    <i class="bi bi-robot me-1"></i>Simulated (demo)
-                                                </span>
                                             {% else %}
-                                                <span class="badge bg-danger">
-                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Reply failed
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>Reply not sent
                                                 </span>
                                             {% endif %}
                                         </div>
@@ -582,7 +564,8 @@
 </div>
 
 <!-- Flag Modal -->
-<div class="modal fade" id="flagModal" tabindex="-1">
+<div class="modal fade" id="flagModal" tabindex="-1"
+     data-flag-url="{% url 'dashboard:flag_report' report.id %}">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -592,9 +575,13 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label for="flag-reason" class="form-label">Reason for Flag:</label>
-                    <textarea class="form-control" id="flag-reason" rows="3" placeholder="e.g., Ambiguous location, multiple issues, misinformation"></textarea>
+                    <textarea class="form-control" id="flag-reason" rows="3"
+                              placeholder="e.g., Ambiguous location, multiple issues, misinformation"></textarea>
                 </div>
-                <button type="button" class="btn btn-primary" onclick="submitFlag()">Submit Flag</button>
+                <div id="flag-feedback" class="mb-2 small"></div>
+                <button type="button" class="btn btn-warning" id="flag-submit-btn" onclick="submitFlag()">
+                    <i class="bi bi-flag me-1"></i>Submit Flag
+                </button>
             </div>
         </div>
     </div>

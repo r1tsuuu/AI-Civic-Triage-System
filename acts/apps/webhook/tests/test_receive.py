@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import time
+from unittest.mock import patch
 
 from django.test import TestCase, override_settings
 from apps.webhook.models import RawPost
@@ -41,9 +42,10 @@ def make_payload(post_id: str, message: str) -> bytes:
 
 
 @override_settings(META_APP_SECRET=TEST_SECRET)
+@patch('apps.webhook.views._trigger_pipeline')  # prevent daemon threads from racing test teardown
 class WebhookReceiveTest(TestCase):
 
-    def test_valid_signature_creates_rawpost(self):
+    def test_valid_signature_creates_rawpost(self, _mock_pipeline):
         body = make_payload("post_001", "Baha na sa amin!")
         response = self.client.post(
             RECEIVE_URL,
@@ -54,7 +56,7 @@ class WebhookReceiveTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(RawPost.objects.filter(facebook_post_id="post_001").exists())
 
-    def test_invalid_signature_returns_403_no_rawpost(self):
+    def test_invalid_signature_returns_403_no_rawpost(self, _mock_pipeline):
         body = make_payload("post_002", "Walang ilaw sa kalsada.")
         response = self.client.post(
             RECEIVE_URL,
@@ -65,7 +67,7 @@ class WebhookReceiveTest(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(RawPost.objects.filter(facebook_post_id="post_002").exists())
 
-    def test_missing_signature_returns_403(self):
+    def test_missing_signature_returns_403(self, _mock_pipeline):
         body = make_payload("post_003", "May sunog sa Brgy. Marawoy!")
         response = self.client.post(
             RECEIVE_URL,
@@ -74,7 +76,7 @@ class WebhookReceiveTest(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
-    def test_duplicate_post_id_is_ignored(self):
+    def test_duplicate_post_id_is_ignored(self, _mock_pipeline):
         body = make_payload("post_dup", "Duplicate post test.")
         sig = make_signature(body)
         self.client.post(RECEIVE_URL, data=body, content_type="application/json",
@@ -83,7 +85,7 @@ class WebhookReceiveTest(TestCase):
                          HTTP_X_HUB_SIGNATURE_256=sig)
         self.assertEqual(RawPost.objects.filter(facebook_post_id="post_dup").count(), 1)
 
-    def test_response_time_under_200ms(self):
+    def test_response_time_under_200ms(self, _mock_pipeline):
         body = make_payload("post_perf", "Performance test.")
         sig = make_signature(body)
         start = time.time()

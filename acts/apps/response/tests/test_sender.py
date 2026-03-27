@@ -1,10 +1,10 @@
 """
-TASK-051: sender.py tests — Graph API send_reply() with mocked HTTP calls.
-TASK-050: templates_config.py tests — reply text per category.
+sender.py tests — simulated AutoReply (demo / hackathon mode, no Graph API).
+templates_config.py tests — reply text per category.
 """
 
 import uuid
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
@@ -33,7 +33,7 @@ def _make_report(category='disaster_flooding', suffix='000'):
 
 
 # ---------------------------------------------------------------------------
-# TASK-050: templates_config
+# templates_config
 # ---------------------------------------------------------------------------
 
 class ReplyTemplatesTests(TestCase):
@@ -52,7 +52,6 @@ class ReplyTemplatesTests(TestCase):
         self.assertIn('Lipa City LGU', text)
 
     def test_known_category_does_not_include_lgu_name_placeholder(self):
-        # Named templates don't use {lgu_name}, so the placeholder should not appear raw
         text = get_reply_text('disaster_flooding')
         self.assertNotIn('{lgu_name}', text)
 
@@ -78,164 +77,64 @@ class ReplyTemplatesTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# TASK-051: send_reply() — Graph API sender
+# send_reply() — simulation mode (no real Graph API call)
 # ---------------------------------------------------------------------------
 
-class SendReplySuccessTests(TestCase):
+class SendReplySimulationTests(TestCase):
+    """send_reply() always creates a successful simulated AutoReply."""
 
     def setUp(self):
-        self.report = _make_report('disaster_flooding', 'success')
+        self.report = _make_report('disaster_flooding', 'sim')
 
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_success_creates_autoreply_with_true(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"id": "12345_67890"}'
-        mock_post.return_value = mock_response
-
+    def test_returns_autoreply_instance(self):
         reply = send_reply(self.report)
-
         self.assertIsInstance(reply, AutoReply)
+
+    def test_graph_api_success_is_true(self):
+        reply = send_reply(self.report)
         self.assertTrue(reply.graph_api_success)
 
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_success_sets_sent_at(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"id": "12345_67890"}'
-        mock_post.return_value = mock_response
-
+    def test_sent_at_is_set(self):
         reply = send_reply(self.report)
-
         self.assertIsNotNone(reply.sent_at)
 
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_success_error_message_is_none(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"id": "12345_67890"}'
-        mock_post.return_value = mock_response
-
+    def test_error_message_is_none(self):
         reply = send_reply(self.report)
-
         self.assertIsNone(reply.error_message)
 
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_success_reply_text_matches_category(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"id": "12345_67890"}'
-        mock_post.return_value = mock_response
-
+    def test_reply_text_matches_category(self):
         reply = send_reply(self.report)
+        self.assertEqual(reply.reply_text, get_reply_text(self.report.category))
 
-        expected = get_reply_text(self.report.category)
-        self.assertEqual(reply.reply_text, expected)
-
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_success_posts_to_correct_url(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{}'
-        mock_post.return_value = mock_response
-
+    def test_autoreply_saved_to_database(self):
         send_reply(self.report)
+        self.assertEqual(AutoReply.objects.filter(report=self.report).count(), 1)
 
-        call_args = mock_post.call_args
-        expected_url = (
-            f"https://graph.facebook.com/v18.0/"
-            f"{self.report.raw_post.facebook_post_id}/comments"
-        )
-        self.assertEqual(call_args[0][0], expected_url)
+    def test_each_category_gets_correct_text(self):
+        categories = ['disaster_flooding', 'transportation_traffic',
+                      'public_infrastructure', 'public_safety', 'other']
+        for cat in categories:
+            report = _make_report(cat, f'cat_{cat}')
+            reply = send_reply(report)
+            self.assertEqual(reply.reply_text, get_reply_text(cat),
+                             f"Wrong reply text for category {cat}")
 
 
-class SendReplyFailureTests(TestCase):
+class SendReplyFallbackTests(TestCase):
+    """send_reply() never raises even when the DB write fails."""
 
     def setUp(self):
-        self.report = _make_report('public_safety', 'failure')
+        self.report = _make_report('public_safety', 'fallback')
 
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_non_200_creates_autoreply_with_false(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = '{"error": {"message": "Invalid token"}}'
-        mock_post.return_value = mock_response
-
-        reply = send_reply(self.report)
-
-        self.assertFalse(reply.graph_api_success)
-
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_non_200_sent_at_is_none(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = '{"error": {"message": "Invalid token"}}'
-        mock_post.return_value = mock_response
-
-        reply = send_reply(self.report)
-
-        self.assertIsNone(reply.sent_at)
-
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_non_200_sets_error_message(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.text = '{"error": {"message": "Invalid token"}}'
-        mock_post.return_value = mock_response
-
-        reply = send_reply(self.report)
-
-        self.assertIsNotNone(reply.error_message)
-        self.assertIn('400', reply.error_message)
-
-    @patch('apps.response.sender.requests.post')
-    def test_network_exception_does_not_raise(self, mock_post):
-        mock_post.side_effect = Exception('Connection refused')
-
-        # Must not raise
-        reply = send_reply(self.report)
-
-        self.assertIsInstance(reply, AutoReply)
-        self.assertFalse(reply.graph_api_success)
-        self.assertIsNone(reply.sent_at)
-        self.assertIn('Connection refused', reply.error_message)
-
-    @patch('apps.response.sender.config', return_value='')
-    def test_missing_token_does_not_raise(self, mock_config):
-        reply = send_reply(self.report)
-
-        self.assertIsInstance(reply, AutoReply)
-        self.assertFalse(reply.graph_api_success)
-        self.assertIn('META_PAGE_ACCESS_TOKEN', reply.error_message)
-
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_always_returns_autoreply_instance(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 500
-        mock_response.text = 'Internal Server Error'
-        mock_post.return_value = mock_response
-
+    @patch('apps.response.models.AutoReply.objects.create',
+           side_effect=Exception('DB connection lost'))
+    def test_db_failure_does_not_raise(self, _mock_create):
+        # Must not raise even when AutoReply.objects.create fails
         result = send_reply(self.report)
+        # Returns None only if both the primary and fallback create fail
+        # (both are mocked to raise here, so result is None)
+        self.assertIsNone(result)
 
-        self.assertIsInstance(result, AutoReply)
-
-    @patch('apps.response.sender.requests.post')
-    @patch('apps.response.sender.config', return_value='fake-token-abc')
-    def test_autoreply_saved_to_database(self, mock_config, mock_post):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = '{}'
-        mock_post.return_value = mock_response
-
-        send_reply(self.report)
-
-        self.assertEqual(AutoReply.objects.filter(report=self.report).count(), 1)
+    def test_always_returns_autoreply_or_none(self):
+        result = send_reply(self.report)
+        self.assertTrue(result is None or isinstance(result, AutoReply))

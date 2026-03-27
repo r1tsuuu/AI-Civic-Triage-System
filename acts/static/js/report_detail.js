@@ -198,7 +198,56 @@ function saveRoutingNotes() {
 }
 
 function submitFlag() {
-    const el = document.getElementById('flag-reason');
-    if (!el) return;
-    // Flag modal — backend endpoint not yet implemented; no-op stub.
+    const textarea = document.getElementById('flag-reason');
+    const feedback = document.getElementById('flag-feedback');
+    const btn = document.getElementById('flag-submit-btn');
+    const modal = document.getElementById('flagModal');
+    if (!textarea || !modal) return;
+
+    const reason = textarea.value.trim();
+    if (!reason) {
+        if (feedback) {
+            feedback.textContent = 'Please enter a reason before submitting.';
+            feedback.className = 'mb-2 small text-danger';
+        }
+        return;
+    }
+
+    const flagUrl = modal.getAttribute('data-flag-url');
+    if (!flagUrl) return;
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Submitting…'; }
+
+    fetch(flagUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': getCsrfToken(),
+        },
+        body: 'reason=' + encodeURIComponent(reason),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            if (feedback) {
+                feedback.textContent = '✓ Flagged — report returned to review queue.';
+                feedback.className = 'mb-2 small text-success';
+            }
+            setTimeout(function() { window.location.reload(); }, 1200);
+        } else {
+            if (feedback) {
+                feedback.textContent = data.error || 'Flag failed.';
+                feedback.className = 'mb-2 small text-danger';
+            }
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-flag me-1"></i>Submit Flag'; }
+        }
+    })
+    .catch(function(err) {
+        console.error('submitFlag failed:', err);
+        if (feedback) {
+            feedback.textContent = '⚠ Network error — try again.';
+            feedback.className = 'mb-2 small text-danger';
+        }
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-flag me-1"></i>Submit Flag'; }
+    });
 }

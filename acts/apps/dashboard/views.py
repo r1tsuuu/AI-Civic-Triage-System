@@ -20,6 +20,7 @@ from .reports import (  # noqa: F401
     DismissReportView,
     OverrideReportView,
     SaveRoutingNotesView,
+    FlagReportView,
 )
 from .history import HistoryView, HistoryExportView  # noqa: F401
 from .public import LandingView, PublicGeoJSONView, PublicStatsView  # noqa: F401

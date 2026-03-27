@@ -12,6 +12,8 @@ Uses triage.Report as the primary model (Phase 2 integration).
 """
 
 import uuid
+from unittest.mock import patch
+
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
@@ -44,13 +46,14 @@ def _make_report(status='reported', suffix="000"):
     )
 
 
+@patch('apps.response.sender.send_reply_async')  # prevent daemon threads from racing test teardown
 class TransitionPipelineTests(TestCase):
     """Happy-path: the full pipeline reported→ack→in_progress→resolved."""
 
     def setUp(self):
         self.client = _authed_client()
 
-    def test_acknowledge_from_reported(self):
+    def test_acknowledge_from_reported(self, _mock_sender):
         report = _make_report('reported', '001')
         url = reverse('dashboard:acknowledge', kwargs={'pk': report.pk})
         response = self.client.post(url)
@@ -63,7 +66,7 @@ class TransitionPipelineTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'acknowledged')
 
-    def test_in_progress_from_acknowledged(self):
+    def test_in_progress_from_acknowledged(self, _mock_sender):
         report = _make_report('acknowledged', '002')
         url = reverse('dashboard:in_progress', kwargs={'pk': report.pk})
         response = self.client.post(url)
@@ -71,7 +74,7 @@ class TransitionPipelineTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'in_progress')
 
-    def test_resolve_from_in_progress(self):
+    def test_resolve_from_in_progress(self, _mock_sender):
         report = _make_report('in_progress', '003')
         url = reverse('dashboard:resolve', kwargs={'pk': report.pk})
         response = self.client.post(url)
@@ -79,7 +82,7 @@ class TransitionPipelineTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'resolved')
 
-    def test_full_pipeline(self):
+    def test_full_pipeline(self, _mock_sender):
         """End-to-end: reported → acknowledged → in_progress → resolved."""
         report = _make_report('reported', '004')
 
@@ -95,7 +98,7 @@ class TransitionPipelineTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'resolved')
 
-    def test_status_changes_created(self):
+    def test_status_changes_created(self, _mock_sender):
         """Each transition must create a StatusChange record."""
         report = _make_report('reported', '005')
 
@@ -214,12 +217,13 @@ class ActionViewEdgeCaseTests(TestCase):
         self.assertEqual(response.status_code, 405)
 
 
+@patch('apps.response.sender.send_reply_async')  # prevent daemon threads from racing test teardown
 class SuccessMessageTests(TestCase):
 
     def setUp(self):
         self.client = _authed_client()
 
-    def test_success_message_after_acknowledge(self):
+    def test_success_message_after_acknowledge(self, _mock_sender):
         report = _make_report('reported', '040')
         url = reverse('dashboard:acknowledge', kwargs={'pk': report.pk})
         response = self.client.post(url)
@@ -227,7 +231,7 @@ class SuccessMessageTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'acknowledged')
 
-    def test_success_message_after_resolve(self):
+    def test_success_message_after_resolve(self, _mock_sender):
         report = _make_report('in_progress', '041')
         url = reverse('dashboard:resolve', kwargs={'pk': report.pk})
         response = self.client.post(url)

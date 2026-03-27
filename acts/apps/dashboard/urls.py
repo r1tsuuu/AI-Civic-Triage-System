@@ -31,6 +31,7 @@ urlpatterns = [
     path("reports/<uuid:pk>/dismiss/", views.DismissReportView.as_view(), name="dismiss"),
     path("reports/<uuid:pk>/override/", views.OverrideReportView.as_view(), name="override"),
     path("reports/<uuid:pk>/notes/", views.SaveRoutingNotesView.as_view(), name="save_notes"),
+    path("reports/<uuid:pk>/flag/", views.FlagReportView.as_view(), name="flag_report"),
 
     # History
     path("history/", views.HistoryView.as_view(), name="history"),

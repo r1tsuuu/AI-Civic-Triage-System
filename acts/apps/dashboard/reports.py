@@ -415,3 +415,41 @@ class SaveRoutingNotesView(View):
         report.routing_notes = notes
         report.save(update_fields=['routing_notes', 'updated_at'])
         return JsonResponse({'ok': True})
+
+
+class FlagReportView(View):
+    """
+    POST /dashboard/reports/<pk>/flag/
+    Prepends a flag reason to the report's routing_notes and forces
+    status back to 'for_review' so the report re-enters the review queue.
+    Returns JSON {ok: true} on success.
+    """
+    http_method_names = ['post']
+
+    def post(self, request, pk):
+        report = get_object_or_404(Report, pk=pk)
+        reason = request.POST.get('reason', '').strip()
+        if not reason:
+            return JsonResponse({'ok': False, 'error': 'Reason is required.'}, status=400)
+
+        flag_line = f"[FLAGGED] {reason}"
+        existing = report.routing_notes.strip() if report.routing_notes else ''
+        report.routing_notes = f"{flag_line}\n{existing}" if existing else flag_line
+        update_fields = ['routing_notes', 'updated_at']
+
+        # Push the report back to for_review if it's still in an active status
+        from apps.triage.constants import ACTIVE_STATUSES
+        if report.status in ACTIVE_STATUSES and report.status != 'for_review':
+            old_status = report.status
+            report.status = 'for_review'
+            update_fields.append('status')
+            StatusChange.objects.create(
+                report=report,
+                from_status=old_status,
+                to_status='for_review',
+                changed_by='demo',
+                note=f'Flagged for senior review: {reason}',
+            )
+
+        report.save(update_fields=update_fields)
+        return JsonResponse({'ok': True})
