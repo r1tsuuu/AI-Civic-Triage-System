@@ -367,8 +367,8 @@
         .leaflet-control-attribution { font-size: 12px; }
 
         .report-pin {
-            width: 24px;
-            height: 24px;
+            width: 30px;
+            height: 30px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -376,8 +376,8 @@
         }
 
         .report-pin .inner {
-            width: 10px;
-            height: 10px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             border: 2px solid #fff;
             box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
@@ -581,8 +581,8 @@ function markerIcon(feature) {
     return L.divIcon({
         className: '',
         html: '<span class="report-pin ' + catClass + resolved + '"><span class="inner"></span></span>',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12]
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
     });
 }
 
