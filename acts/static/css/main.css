@@ -1,40 +1,55 @@
 body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f8fafc;
-    color: #1e293b;
+    font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--survey-white);
+    color: var(--field-ink);
+    font-size: 15px;
 }
 
 :root {
-    --acts-blue: #2563eb;
-    --acts-red: #dc2626;
-    --acts-green: #16a34a;
+    /* ── Cartographic Civic palette (NAMRIA / NDRRMC convention) ── */
+    --survey-white:    #F4F2ED;   /* primary surface — parchment, not pure white */
+    --contour-gray:    #D6D1C4;   /* borders, dividers */
+    --field-ink:       #1C2438;   /* primary text */
+    --datum-blue:      #0E4C8B;   /* primary action, links, active state */
+    --water-blue:      #3B82C4;   /* info / secondary */
+    --topo-green:      #3A6B47;   /* resolved / success */
+    --alert-vermillion:#C8382A;   /* critical urgency */
+    --caution-amber:   #C47D1E;   /* medium urgency, for_review */
+    --neutral-ground:  #8C9BAB;   /* muted text, other category */
+    --safety-purple:   #5C3B7E;   /* NDRRMC-style risk overlay */
 
-    --bs-primary: #2563eb;
-    --bs-primary-rgb: 37, 99, 235;
-    --bs-danger: #dc2626;
-    --bs-danger-rgb: 220, 38, 38;
-    --bs-success: #16a34a;
-    --bs-success-rgb: 22, 163, 74;
+    /* Bootstrap variable overrides */
+    --bs-primary:     #0E4C8B;
+    --bs-primary-rgb: 14, 76, 139;
+    --bs-danger:      #C8382A;
+    --bs-danger-rgb:  200, 56, 42;
+    --bs-success:     #3A6B47;
+    --bs-success-rgb: 58, 107, 71;
 
-    /* Category Colors */
-    --category-disaster: var(--bs-danger);
-    --category-transport: #FF9500;
-    --category-infrastructure: #FFD700;
-    --category-safety: #9333EA;
-    --category-other: #6B7280;
+    /* Legacy aliases (keep for existing template references) */
+    --acts-blue:  var(--datum-blue);
+    --acts-red:   var(--alert-vermillion);
+    --acts-green: var(--topo-green);
 
-    /* Status Colors */
-    --status-for-review:  #D97706;
-    --status-reported:    var(--bs-primary);
-    --status-acknowledged: #F59E0B;
-    --status-in-progress: #8B5CF6;
-    --status-resolved:    var(--bs-success);
-    --status-unresolved:  var(--bs-danger);
+    /* Category colours — cartographic convention */
+    --category-disaster:       #C8382A;  /* Alert Vermillion */
+    --category-transport:      #C47D1E;  /* Caution Amber */
+    --category-infrastructure: #0E4C8B;  /* Datum Blue */
+    --category-safety:         #5C3B7E;  /* NDRRMC risk purple */
+    --category-other:          #8C9BAB;  /* Neutral Ground */
+
+    /* Status colours — muted, not neon */
+    --status-for-review:    #C47D1E;
+    --status-reported:      #0E4C8B;
+    --status-acknowledged:  #C47D1E;
+    --status-in-progress:   #5C3B7E;
+    --status-resolved:      #3A6B47;
+    --status-unresolved:    #C8382A;
 
     /* Confidence tier colours */
-    --conf-high:   #16a34a;
-    --conf-medium: #d97706;
-    --conf-low:    #dc2626;
+    --conf-high:   #3A6B47;  /* Topo Green */
+    --conf-medium: #C47D1E;  /* Caution Amber */
+    --conf-low:    #C8382A;  /* Alert Vermillion */
 }
 
 #wrapper {
@@ -50,10 +65,10 @@ body {
     height: 100vh;
     overflow-y: auto;
     z-index: 100;
-    background: #1A202C; /* Deep navy — command center */
-    border-right: 1px solid #2D3748;
+    background: var(--field-ink);   /* Field Ink — civic authority */
+    border-right: 1px solid #263045;
     flex-shrink: 0;
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 3px 0 12px rgba(0, 0, 0, 0.25);
 }
 
 #sidebar .navbar-brand {
@@ -90,16 +105,16 @@ body {
 
 #sidebar .nav-link:hover {
     color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: rgba(14, 76, 139, 0.10);
 }
 
 #sidebar .nav-link.active {
     color: #ffffff !important;
-    background-color: rgba(79, 144, 255, 0.14);
-    border-left: 4px solid #4F90FF;
-    border-radius: 0 0.5rem 0.5rem 0;
-    padding-left: calc(1.25rem - 4px); /* compensate for border width */
-    font-weight: 600;
+    background-color: rgba(14, 76, 139, 0.18);
+    border-left: 3px solid var(--datum-blue);
+    border-radius: 0;   /* survey notation — straight edge, no rounding */
+    padding-left: calc(1.25rem - 3px);
+    font-weight: 500;
 }
 
 #main-content {
@@ -107,12 +122,12 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: #F8F9FA;
+    background-color: var(--survey-white);
 }
 
 main.container-fluid {
     flex: 1;
-    background-color: #F8F9FA;
+    background-color: var(--survey-white);
     padding: 1.5rem !important;
 }
 
@@ -152,40 +167,46 @@ main.container-fluid {
 }
 
 .status-badge.reported {
-    background-color: rgba(59, 130, 246, 0.2);
-    color: var(--status-reported);
-    border: 1px solid var(--status-reported);
+    background-color: rgba(14, 76, 139, 0.10);
+    color: var(--datum-blue);
+    border: 1px solid rgba(14, 76, 139, 0.3);
 }
 
 .status-badge.acknowledged {
-    background-color: rgba(245, 158, 11, 0.2);
-    color: var(--status-acknowledged);
-    border: 1px solid var(--status-acknowledged);
+    background-color: rgba(196, 125, 30, 0.10);
+    color: var(--caution-amber);
+    border: 1px solid rgba(196, 125, 30, 0.35);
 }
 
 .status-badge.in-progress {
-    background-color: rgba(139, 92, 246, 0.2);
-    color: var(--status-in-progress);
-    border: 1px solid var(--status-in-progress);
+    background-color: rgba(92, 59, 126, 0.10);
+    color: var(--safety-purple);
+    border: 1px solid rgba(92, 59, 126, 0.3);
 }
 
 .status-badge.resolved {
-    background-color: rgba(16, 185, 129, 0.2);
-    color: var(--status-resolved);
-    border: 1px solid var(--status-resolved);
+    background-color: rgba(58, 107, 71, 0.10);
+    color: var(--topo-green);
+    border: 1px solid rgba(58, 107, 71, 0.3);
 }
 
 .status-badge.unresolved {
-    background-color: rgba(239, 68, 68, 0.2);
-    color: var(--status-unresolved);
-    border: 1px solid var(--status-unresolved);
+    background-color: rgba(200, 56, 42, 0.10);
+    color: var(--alert-vermillion);
+    border: 1px solid rgba(200, 56, 42, 0.3);
+}
+
+.status-badge.dismissed {
+    background-color: rgba(140, 155, 171, 0.12);
+    color: var(--neutral-ground);
+    border: 1px solid rgba(140, 155, 171, 0.35);
 }
 
 /* ── For Review status ──────────────────────────────────────────── */
 .status-for-review {
-    background-color: rgba(217, 119, 6, 0.15);
-    color: var(--status-for-review);
-    border: 1px solid var(--status-for-review);
+    background-color: rgba(196, 125, 30, 0.12);
+    color: var(--caution-amber);
+    border: 1px dashed var(--caution-amber);
 }
 
 /* ── Confidence tier badges ─────────────────────────────────────── */
@@ -276,33 +297,28 @@ main.container-fluid {
 }
 
 .urgency-fill.critical {
-    background-color: #E02424;
-    /* >= 75 */
+    background-color: var(--alert-vermillion);  /* >= 75 */
 }
 
 .urgency-fill.warning {
-    background-color: #FF9500;
-    /* >= 50 */
+    background-color: var(--caution-amber);     /* >= 50 */
 }
 
 .urgency-fill.low {
-    background-color: #057A55;
-    /* < 50 */
+    background-color: var(--topo-green);        /* < 50 */
 }
 
 .stat-card {
     background: white;
-    border-radius: 0.75rem;
-    border: 1px solid #f1f5f9;
+    border-radius: 4px;              /* civic/documentary — less consumer-grade rounding */
+    border: 1px solid var(--contour-gray);
     padding: 1.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    transition: border-color 0.2s ease;
 }
 
 .stat-card:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-    transform: translateY(-2px);
-    border-color: #e2e8f0;
+    border-color: var(--datum-blue);
 }
 
 .stat-card .stat-label {
@@ -681,15 +697,15 @@ main.container-fluid {
 }
 
 .stepper-step.active .stepper-circle {
-    background-color: var(--acts-blue);
-    border-color: var(--acts-blue);
+    background-color: var(--datum-blue);
+    border-color: var(--datum-blue);
     color: white;
-    box-shadow: 0 0 0 4px rgba(26, 86, 219, 0.1);
+    box-shadow: none;
 }
 
 .stepper-step.completed .stepper-circle {
-    background-color: var(--acts-green);
-    border-color: var(--acts-green);
+    background-color: var(--topo-green);
+    border-color: var(--topo-green);
     color: white;
 }
 
@@ -701,11 +717,11 @@ main.container-fluid {
 }
 
 .stepper-step.active .stepper-label {
-    color: var(--acts-blue);
+    color: var(--datum-blue);
 }
 
 .stepper-step.completed .stepper-label {
-    color: var(--acts-green);
+    color: var(--topo-green);
 }
 
 .stepper-step::after {
@@ -836,12 +852,12 @@ main.container-fluid {
 .timeline-item {
     padding: 1.5rem;
     background: white;
-    border-left: 4px solid var(--acts-blue);
-    transition: all 0.2s ease;
+    border-left: 4px solid var(--datum-blue);
+    transition: border-left-color 0.15s ease;
 }
 
 .timeline-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-left-color: var(--topo-green);
 }
 
 .timeline-item strong {
@@ -909,14 +925,14 @@ body {
 .status-emergency {
     display: inline-block;
     padding: 0.3rem 0.65rem;
-    border-radius: 0.25rem;
+    border-radius: 20px;
     font-size: 0.78rem;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.4px;
     text-transform: uppercase;
-    background-color: #dc2626;
-    color: #ffffff;
-    border: 1px solid #dc2626;
+    background-color: rgba(200, 56, 42, 0.12);
+    color: var(--alert-vermillion);
+    border: 1px solid var(--alert-vermillion);
 }
 
 /* ── Category badge — full slug aliases ─────────────────────────────────── */
@@ -932,8 +948,8 @@ body {
     color: #ffffff;
 }
 .cat-disaster_flooding      { background-color: var(--category-disaster); }
-.cat-transportation_traffic { background-color: var(--category-transport); color: #1f2937; }
-.cat-public_infrastructure  { background-color: #EAB308; color: #1f2937; }
+.cat-transportation_traffic { background-color: var(--category-transport); }
+.cat-public_infrastructure  { background-color: var(--category-infrastructure); }
 .cat-public_safety          { background-color: var(--category-safety); }
 .cat-other,
 .cat-uncertain              { background-color: var(--category-other); }
@@ -1095,21 +1111,31 @@ body {
 /* ── Card shell ─────────────────────────────────────────────────────────── */
 .aq-card {
     background: #ffffff;
-    border: 1px solid #E2E8F0;
-    border-radius: 6px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    border: 1px solid var(--contour-gray);
+    border-radius: 3px;             /* form-like, not widget-like */
+    box-shadow: none;
     padding: 0.55rem 0.9rem;
     margin-bottom: 0.35rem;
-    transition: box-shadow 0.15s ease;
+    transition: border-left-color 0.15s ease;
+    border-left: 4px solid transparent;
 }
 .aq-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background-color: #fdfcfb;
 }
 .aq-card--emergency {
-    border-left: 3px solid var(--acts-red);
+    border-left-color: var(--alert-vermillion);
+}
+.aq-card--high-urgency {
+    border-left-color: var(--caution-amber);
+}
+.aq-card--medium-urgency {
+    border-left-color: var(--water-blue);
+}
+.aq-card--low-urgency {
+    border-left-color: var(--topo-green);
 }
 .aq-card--low-conf {
-    background-color: #FFFBEB;
+    background-color: #fdf9f0;
 }
 
 /* ── Row layout ─────────────────────────────────────────────────────────── */
@@ -1162,8 +1188,8 @@ body {
     white-space: nowrap;
 }
 .aq-time--stale {
-    color: #DC2626;
-    font-weight: 700;
+    color: var(--alert-vermillion);
+    font-weight: 500;
 }
 
 /* ── Urgency score ──────────────────────────────────────────────────────── */
@@ -1178,9 +1204,9 @@ body {
     font-weight: 500;
     color: #718096;
 }
-.aq-urgency--critical { color: #DC2626; }
-.aq-urgency--warning  { color: #D97706; }
-.aq-urgency--low      { color: #16A34A; }
+.aq-urgency--critical { color: var(--alert-vermillion); }
+.aq-urgency--warning  { color: var(--caution-amber); }
+.aq-urgency--low      { color: var(--topo-green); }
 
 /* ── Post summary (one line, truncated) ─────────────────────────────────── */
 .aq-summary {
@@ -1199,11 +1225,11 @@ body {
     align-items: center;
     gap: 0.2rem;
     padding: 0.1rem 0.5rem;
-    background: linear-gradient(135deg, #FF6B35, #F7931E);
+    background: var(--alert-vermillion);   /* solid — no gradient */
     color: #ffffff;
-    border-radius: 9rem;
+    border-radius: 2px;
     font-size: 0.68rem;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
@@ -1211,19 +1237,19 @@ body {
 /* ── Compact status badges ──────────────────────────────────────────────── */
 .aq-status {
     display: inline-block;
-    padding: 0.1rem 0.45rem;
-    border-radius: 0.2rem;
-    font-size: 0.70rem;
-    font-weight: 700;
-    letter-spacing: 0.4px;
+    padding: 0.1rem 0.5rem;
+    border-radius: 20px;            /* pill-shaped, all-caps, letter-spaced */
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
     white-space: nowrap;
 }
-.aq-status--pending  { background: #FEF3C7; color: #78350F; border: 1px solid #FCD34D; }
-.aq-status--resolved { background: #16A34A; color: #fff;    border: 1px solid #16A34A; }
-.aq-status--ack      { background: rgba(245,158,11,0.15); color: #B45309; border: 1px solid #F59E0B; }
-.aq-status--progress { background: rgba(139,92,246,0.12);  color: #6D28D9; border: 1px solid #8B5CF6; }
-.aq-status--dismissed{ background: #F3F4F6; color: #6B7280; border: 1px solid #D1D5DB; }
+.aq-status--pending  { background: rgba(196,125,30,.12);  color: var(--caution-amber);   border: 1px dashed var(--caution-amber); }
+.aq-status--resolved { background: rgba(58,107,71,.12);   color: var(--topo-green);       border: 1px solid var(--topo-green); }
+.aq-status--ack      { background: rgba(196,125,30,.10);  color: var(--caution-amber);   border: 1px solid rgba(196,125,30,.4); }
+.aq-status--progress { background: rgba(92,59,126,.10);   color: var(--safety-purple);   border: 1px solid rgba(92,59,126,.35); }
+.aq-status--dismissed{ background: rgba(140,155,171,.10); color: var(--neutral-ground);  border: 1px solid var(--contour-gray); }
 
 /* ── Tech details button ────────────────────────────────────────────────── */
 .aq-tech-btn {
@@ -1268,4 +1294,206 @@ body {
     .aq-row--footer { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
     .aq-row--footer > div:last-child { width: 100%; justify-content: flex-end; }
     .aq-location { max-width: 180px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CARTOGRAPHIC CIVIC — New layout components
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Monospaced utility (IDs, timestamps, coordinates, scores) ────────── */
+.mono {
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.report-card__id {
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
+    font-size: 0.72rem;
+    color: var(--neutral-ground);
+    letter-spacing: 0.3px;
+}
+
+/* ── Split-panel layout (Reports Queue) ──────────────────────────────── */
+.split-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    height: calc(100vh - 62px);    /* 62px = sticky topbar height */
+    overflow: hidden;
+    margin: -1.5rem;               /* cancel container-fluid padding */
+}
+
+.split-queue {
+    overflow-y: auto;
+    border-right: 1px solid var(--contour-gray);
+    background: var(--survey-white);
+    display: flex;
+    flex-direction: column;
+}
+
+.split-queue-header {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--contour-gray);
+    background: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.split-queue-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.split-map {
+    position: relative;
+    overflow: hidden;
+    background: #e8e4dc;
+}
+
+#queue-map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Desaturate OSM tiles to cartographic survey tone */
+.leaflet-tile-pane {
+    filter: saturate(35%) brightness(1.06);
+}
+
+/* ── Filter token row ────────────────────────────────────────────────── */
+.filter-tokens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+}
+
+.filter-token {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    border: 1px solid var(--contour-gray);
+    background: white;
+    color: var(--field-ink);
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+    white-space: nowrap;
+}
+
+.filter-token:hover {
+    border-color: var(--datum-blue);
+    color: var(--datum-blue);
+}
+
+.filter-token.active {
+    background: var(--datum-blue);
+    border-color: var(--datum-blue);
+    color: white;
+}
+
+.filter-token.active:hover {
+    background: #0c3d6e;
+}
+
+/* ── Detail drawer ───────────────────────────────────────────────────── */
+.detail-drawer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 62%;
+    height: 100%;
+    background: white;
+    border-left: 1px solid var(--contour-gray);
+    transform: translateX(100%);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-close-bar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--field-ink);
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(255,255,255,0.7);
+}
+
+.drawer-close-btn {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0 4px;
+    transition: color 0.12s;
+}
+
+.drawer-close-btn:hover {
+    color: white;
+}
+
+.drawer-content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* ── Map pin legend ──────────────────────────────────────────────────── */
+.map-pin-legend {
+    position: absolute;
+    bottom: 24px;
+    left: 12px;
+    z-index: 400;
+    background: rgba(255,255,255,0.94);
+    border: 1px solid var(--contour-gray);
+    border-radius: 3px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--field-ink);
+    line-height: 1.8;
+    backdrop-filter: blur(2px);
+}
+
+.map-pin-legend .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ── Queue count strip ───────────────────────────────────────────────── */
+.queue-count-strip {
+    font-size: 12px;
+    color: var(--neutral-ground);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+}
+
+@media (max-width: 900px) {
+    .split-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+    .split-map {
+        height: 320px;
+    }
+    .detail-drawer {
+        width: 100%;
+    }
 }

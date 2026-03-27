@@ -4,70 +4,191 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ACTS — Demo Access</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <title>ACTS — LGU Access</title>
+  <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Topo texture background ─────────────────────────────── */
     body {
-      background-color: #f0f4f8;
+      min-height: 100vh;
+      background-color: #111827;
+      background-image:
+        /* Contour ring pattern — concentric circles at low opacity */
+        radial-gradient(ellipse 900px 600px at 30% 60%, rgba(14,76,139,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 600px 400px at 75% 30%, rgba(58,107,71,0.08) 0%, transparent 65%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Ccircle cx='40' cy='40' r='36' fill='none' stroke='rgba(255,255,255,0.025)' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='24' fill='none' stroke='rgba(255,255,255,0.018)' stroke-width='1'/%3E%3Ccircle cx='40' cy='40' r='12' fill='none' stroke='rgba(255,255,255,0.013)' stroke-width='1'/%3E%3C/svg%3E");
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    .gate-card {
+
+    /* ── Gate card ───────────────────────────────────────────── */
+    .gate-wrap {
       width: 100%;
       max-width: 400px;
+      padding: 24px;
     }
-    .brand-bar {
-      background-color: #1A56DB;
-      height: 6px;
-      border-radius: 4px 4px 0 0;
+
+    .gate-card {
+      background: #ffffff;
+      padding: 44px 48px 36px;
+      border-radius: 0;              /* no rounding — institutional */
+      border-top: 3px solid #0E4C8B;
+    }
+
+    /* ── System mark ─────────────────────────────────────────── */
+    .gate-mark {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .gate-mark img {
+      height: 48px;
+      width: auto;
+      margin-bottom: 14px;
+    }
+
+    .gate-org {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: #1C2438;
+    }
+
+    .gate-sys {
+      font-size: 11px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #8C9BAB;
+      margin-top: 3px;
+    }
+
+    /* ── Separator ───────────────────────────────────────────── */
+    .gate-rule {
+      border: none;
+      border-top: 1px solid #D6D1C4;
+      margin: 20px 0 24px;
+    }
+
+    /* ── Error alert ─────────────────────────────────────────── */
+    .gate-error {
+      background: rgba(200,56,42,0.08);
+      border: 1px solid rgba(200,56,42,0.3);
+      color: #C8382A;
+      padding: 9px 14px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      border-radius: 2px;
+    }
+
+    /* ── Form ────────────────────────────────────────────────── */
+    .gate-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: #8C9BAB;
+      margin-bottom: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .gate-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #D6D1C4;
+      border-radius: 2px;
+      font-size: 15px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      color: #1C2438;
+      outline: none;
+      background: #FDFCFB;
+      transition: border-color 0.15s;
+    }
+
+    .gate-input:focus {
+      border-color: #0E4C8B;
+      background: white;
+    }
+
+    .gate-btn {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: #0E4C8B;
+      color: white;
+      border: none;
+      border-radius: 0;             /* no rounding — matches gate card */
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      font-family: 'IBM Plex Sans', sans-serif;
+      transition: background 0.15s;
+    }
+
+    .gate-btn:hover {
+      background: #0c3d6e;
+    }
+
+    /* ── Disclaimer ──────────────────────────────────────────── */
+    .gate-disclaimer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: #8C9BAB;
+      text-align: center;
+      line-height: 1.55;
+      border-top: 1px solid #D6D1C4;
+      padding-top: 16px;
     }
   </style>
 </head>
 <body>
-  <div class="gate-card">
-    <div class="brand-bar"></div>
-    <div class="card shadow-sm border-0">
-      <div class="card-body p-4">
-        <div class="text-center mb-4">
-          <img src="{% static 'img/logo.png' %}"
-               alt="ACTS — AI Civic Triage System"
-               style="height: 52px; width: auto; margin-bottom: 12px; display: block; margin-left: auto; margin-right: auto;">
-          <p class="text-muted small mb-0">LGU Command Center — Demo Access</p>
-        </div>
+  <div class="gate-wrap">
+    <div class="gate-card">
 
-        {% if error %}
-          <div class="alert alert-danger py-2 small">{{ error }}</div>
-        {% endif %}
-
-        <form method="POST" action="/gate/">
-          {% csrf_token %}
-          <div class="mb-3">
-            <label for="password" class="form-label small fw-semibold text-secondary">
-              DEMO PASSWORD
-            </label>
-            <input
-              type="password"
-              name="password"
-              id="password"
-              class="form-control"
-              placeholder="Enter demo password"
-              autofocus
-              required
-            >
-          </div>
-          <div class="d-grid">
-            <button type="submit" class="btn btn-primary" style="background-color:#1A56DB; border-color:#1A56DB;">
-              Enter Dashboard
-            </button>
-          </div>
-        </form>
+      <div class="gate-mark">
+        <img src="{% static 'img/logo.png' %}" alt="ACTS">
+        <div class="gate-org">Lipa City LGU</div>
+        <div class="gate-sys">AI Civic Triage System</div>
       </div>
+
+      <hr class="gate-rule">
+
+      {% if error %}
+        <div class="gate-error">{{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/gate/">
+        {% csrf_token %}
+        <label for="password" class="gate-label">Access Code</label>
+        <input
+          type="password"
+          name="password"
+          id="password"
+          class="gate-input"
+          placeholder="——————————"
+          autofocus
+          required
+        >
+        <button type="submit" class="gate-btn">Enter</button>
+      </form>
+
+      <p class="gate-disclaimer">
+        Access restricted to authorized LGU personnel.<br>All sessions are logged.
+      </p>
+
     </div>
-    <p class="text-center text-muted mt-3" style="font-size: 0.75rem;">
-      Team CodeBlooded &mdash; EXPE21ENCE YSES: The HackFest
-    </p>
   </div>
 </body>
 </html>

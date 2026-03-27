@@ -1,242 +1,223 @@
-/* Legacy custom filter classes removed; now using Bootstrap native cards */
+/* ═══════════════════════════════════════════════════════════════════════════
+   History — Field Dispatch Journal
+   Typography: IBM Plex Mono for timestamps + IDs; IBM Plex Sans for body
+   No card chrome. Rows and ink only.
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-.results-summary {
-    padding: 0.75rem 1rem;
-    background-color: #f9fafb;
-    border-left: 3px solid #1A56DB;
-    border-radius: 0.25rem;
+.history-wrap {
+    max-width: 900px;
 }
 
-.history-timeline {
-    position: relative;
-    padding: 2rem 0 2rem 3.5rem;
-}
-
-.history-timeline::before {
-    content: '';
-    position: absolute;
-    left: 1.25rem;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: #e2e8f0;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 2rem;
-    padding: 1.5rem;
+/* ── Header strip ────────────────────────────────────────────── */
+.history-header-strip {
     background: white;
-    border: 1px solid #f1f5f9;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--contour-gray);
+    border-radius: 3px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
 }
 
-.timeline-item:hover {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-    transform: translateY(-2px);
-    border-color: #e2e8f0;
+.history-input {
+    border: 1px solid var(--contour-gray);
+    border-radius: 2px;
+    padding: 5px 10px;
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--field-ink);
+    background: var(--survey-white);
+    outline: none;
 }
 
-.timeline-marker {
-    position: absolute;
-    left: -2.75rem;
-    top: 1.75rem;
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #1A56DB;
-    font-size: 1.5rem;
+.history-input:focus {
+    border-color: var(--datum-blue);
     background: white;
-    border-radius: 50%;
 }
 
-.timeline-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+.history-btn-apply {
+    background: var(--datum-blue);
+    color: white;
+    border: none;
+    border-radius: 2px;
+    padding: 5px 14px;
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    cursor: pointer;
 }
 
-.transition-badge {
-    display: inline-block;
-    background-color: #dbeafe;
-    border: 1px solid #bfdbfe;
-    color: #1e40af;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.375rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-}
+.history-btn-apply:hover { background: #0c3d6e; }
 
-.transition-badge i {
-    margin: 0 0.5rem;
-    font-size: 0.75rem;
-}
-
-.timestamp {
-    color: #64748b;
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.timeline-body {
-    margin-bottom: 1rem;
-}
-
-.report-info {
-    margin-bottom: 0.75rem;
-    font-size: 0.875rem;
-}
-
-.report-info strong {
-    color: #374151;
-    font-weight: 600;
-    margin-right: 0.5rem;
-}
-
-.report-link {
-    color: #1A56DB;
+.history-btn-clear {
+    color: var(--neutral-ground);
+    font-size: 13px;
     text-decoration: none;
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    font-weight: 600;
+}
+
+.history-btn-clear:hover { color: var(--field-ink); }
+
+.history-btn-export {
+    font-size: 12px;
+    color: var(--datum-blue);
+    text-decoration: none;
+    border: 1px solid rgba(14,76,139,0.3);
+    border-radius: 2px;
+    padding: 4px 10px;
+}
+
+.history-btn-export:hover {
+    background: var(--datum-blue);
+    color: white;
+}
+
+.history-count {
+    font-size: 12px;
+    color: var(--neutral-ground);
+}
+
+/* ── Dispatch log container ──────────────────────────────────── */
+.dispatch-log {
+    background: white;
+    border: 1px solid var(--contour-gray);
+    border-radius: 3px;
+}
+
+/* ── Log entry row ───────────────────────────────────────────── */
+.log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--contour-gray);
+    transition: background 0.1s;
+}
+
+.log-entry:last-child { border-bottom: none; }
+
+.log-entry:hover { background: #fdfcfb; }
+
+/* ── Timestamp column (fixed width, mono) ────────────────────── */
+.log-timestamp {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--neutral-ground);
+    min-width: 80px;
+    padding-right: 16px;
+    line-height: 1.5;
+    border-right: 1px solid var(--contour-gray);
+    margin-right: 16px;
+    padding-top: 2px;
+}
+
+/* ── Body column ─────────────────────────────────────────────── */
+.log-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+}
+
+/* ── Transition: FROM → TO ───────────────────────────────────── */
+.log-transition {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.log-status {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 1px 7px;
+    border-radius: 20px;
+}
+
+.log-status--from {
+    background: rgba(140,155,171,.12);
+    color: var(--neutral-ground);
+    border: 1px solid var(--contour-gray);
+}
+
+.log-status--to { border: 1px solid transparent; }
+.log-status--to.log-status--resolved  { background: rgba(58,107,71,.12);  color: var(--topo-green);      border-color: rgba(58,107,71,.3); }
+.log-status--to.log-status--acknowledged { background: rgba(196,125,30,.10); color: var(--caution-amber);  border-color: rgba(196,125,30,.35); }
+.log-status--to.log-status--in_progress  { background: rgba(92,59,126,.10);  color: var(--safety-purple);  border-color: rgba(92,59,126,.3); }
+.log-status--to.log-status--dismissed    { background: rgba(140,155,171,.10);color: var(--neutral-ground); border-color: var(--contour-gray); }
+.log-status--to.log-status--for_review   { background: rgba(196,125,30,.10); color: var(--caution-amber);  border-color: var(--caution-amber); border-style: dashed; }
+.log-status--to.log-status--reported     { background: rgba(14,76,139,.10);  color: var(--datum-blue);     border-color: rgba(14,76,139,.3); }
+
+/* ── Report ID link (mono) ───────────────────────────────────── */
+.log-report-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+}
+
+.log-link {
+    color: var(--datum-blue);
+    text-decoration: none;
     word-break: break-all;
 }
 
-.report-link:hover {
-    text-decoration: underline;
-    color: #1e40af;
+.log-link:hover { text-decoration: underline; }
+
+/* ── Note text ───────────────────────────────────────────────── */
+.log-note {
+    font-size: 12px;
+    color: var(--neutral-ground);
+    font-style: italic;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.change-note {
-    padding: 0.75rem;
-    background-color: #f9fafb;
-    border-left: 3px solid #fbbf24;
-    border-radius: 0.25rem;
-    font-size: 0.875rem;
+/* ── Actor column ────────────────────────────────────────────── */
+.log-actor {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--neutral-ground);
+    min-width: 60px;
+    text-align: right;
+    padding-left: 12px;
+    flex-shrink: 0;
 }
 
-.change-note strong {
-    color: #374151;
-    margin-right: 0.5rem;
+/* ── Empty state ─────────────────────────────────────────────── */
+.log-empty {
+    padding: 40px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--neutral-ground);
+    font-family: 'IBM Plex Mono', monospace;
 }
 
-.change-note span {
-    color: #475569;
-}
-
-.timeline-footer {
-    padding-top: 0.75rem;
-    border-top: 1px solid #e5e7eb;
-}
-
-.timeline-footer small {
-    color: #94a3b8;
-    font-size: 0.8rem;
-}
-
-#export-btn {
-    padding: 0.625rem 1rem;
-    font-weight: 500;
-    border-radius: 0.375rem;
-    transition: all 0.2s ease;
-}
-
-#export-btn:hover {
-    background-color: #1A56DB;
-    color: white;
-    border-color: #1A56DB;
-}
-
-.pagination {
-    gap: 0.25rem;
+/* ── Pagination ──────────────────────────────────────────────── */
+.history-pagination {
+    margin-top: 16px;
+    padding-bottom: 8px;
 }
 
 .pagination .page-link {
-    color: #1A56DB;
-    border: 1px solid #cbd5e1;
-    border-radius: 0.375rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    color: var(--datum-blue);
+    border-color: var(--contour-gray);
+    border-radius: 2px;
+    font-size: 13px;
+    padding: 4px 10px;
 }
 
 .pagination .page-link:hover {
-    background-color: #dbeafe;
-    border-color: #1A56DB;
+    background-color: rgba(14,76,139,.08);
+    border-color: var(--datum-blue);
 }
 
 .pagination .page-item.active .page-link {
-    background-color: #1A56DB;
-    border-color: #1A56DB;
+    background-color: var(--datum-blue);
+    border-color: var(--datum-blue);
     color: white;
 }
 
-
 @media (max-width: 768px) {
-    .history-timeline {
-        padding: 1.5rem 0 1.5rem 2.5rem;
-    }
-
-    .timeline-marker {
-        left: -2rem;
-        width: 1.75rem;
-        height: 1.75rem;
-        font-size: 1.25rem;
-    }
-
-    .timeline-item {
-        padding: 1rem;
-    }
-
-    .timeline-header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .filter-group {
-        grid-template-columns: 1fr;
-    }
-
-    .filter-actions {
-        flex-direction: column;
-    }
-
-    .filter-actions .btn {
-        width: 100%;
-    }
-
-    .transition-badge {
-        font-size: 0.75rem;
-        white-space: nowrap;
-    }
-
-    .report-link {
-        font-size: 0.7rem;
-    }
-}
-
-@media print {
-    .filter-bar,
-    .results-summary,
-    .pagination,
-    #export-btn {
-        display: none !important;
-    }
-
-    .timeline-item {
-        break-inside: avoid;
-    }
-
-    .history-timeline {
-        padding: 1rem 0 1rem 2rem;
-    }
+    .log-entry { flex-wrap: wrap; }
+    .log-timestamp { border-right: none; margin-right: 0; min-width: 100%; border-bottom: 1px solid var(--contour-gray); padding-bottom: 4px; margin-bottom: 6px; }
+    .log-actor { min-width: auto; }
 }
