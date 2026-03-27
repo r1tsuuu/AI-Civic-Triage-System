@@ -145,10 +145,9 @@ class DismissTests(TestCase):
         self.client.post(reverse('dashboard:dismiss', kwargs={'pk': report.pk}))
         comment = MockComment.objects.filter(raw_post=report.raw_post).order_by('-created_at').first()
         self.assertIsNotNone(comment)
-        self.assertEqual(
-            comment.text,
-            get_status_update_text(report.category, "dismissed"),
-        )
+        self.assertIn("Your report:", comment.text)
+        self.assertIn("was declined", comment.text)
+        self.assertIn(get_status_update_text(report.category, "dismissed"), comment.text)
 
 
 class InvalidTransitionTests(TestCase):
@@ -256,7 +255,6 @@ class SuccessMessageTests(TestCase):
         self.client.post(reverse('dashboard:resolve', kwargs={'pk': report.pk}))
         comment = MockComment.objects.filter(raw_post=report.raw_post).order_by('-created_at').first()
         self.assertIsNotNone(comment)
-        self.assertEqual(
-            comment.text,
-            get_status_update_text(report.category, "resolved"),
-        )
+        self.assertIn("Your report:", comment.text)
+        self.assertIn("was resolved", comment.text)
+        self.assertIn(get_status_update_text(report.category, "resolved"), comment.text)

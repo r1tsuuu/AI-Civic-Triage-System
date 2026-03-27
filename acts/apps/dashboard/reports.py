@@ -80,6 +80,37 @@ def _deduplicate_and_annotate(qs) -> list:
     return primaries
 
 
+def _build_citizen_status_message(report: Report, new_status: str) -> str:
+    """
+    Build a citizen-facing messenger update that includes:
+    - original report caption preview
+    - resulting state
+    - plain-language reason
+    """
+    from apps.response.templates_config import get_status_update_text
+
+    raw_text = (report.raw_post.post_text or "").strip() if report.raw_post else ""
+    caption = " ".join(raw_text.split())
+    if len(caption) > 110:
+        caption = caption[:107].rstrip() + "..."
+
+    if new_status == "resolved":
+        state = "resolved"
+        reason = "validated and addressed by the LGU response team."
+    elif new_status == "dismissed":
+        state = "declined"
+        reason = "it was flagged as duplicate, out of scope, or lacking verifiable details."
+    else:
+        state = new_status.replace("_", " ")
+        reason = "it has been reviewed by the LGU."
+
+    base = get_status_update_text(report.category, new_status)
+    return (
+        f'Your report: "{caption or "No caption provided"}" was {state} because {reason}\n\n'
+        f"{base}"
+    )
+
+
 class ReportListView(ListView):
     model = Report
     template_name = 'dashboard/list_view.html'
@@ -274,11 +305,10 @@ class ResolveReportView(_BaseStatusActionView):
             if report.raw_post_id:
                 try:
                     from apps.mock_fb.models import MockComment
-                    from apps.response.templates_config import get_status_update_text
                     MockComment.objects.create(
                         raw_post_id=report.raw_post_id,
                         author="Lipa City LGU Official",
-                        text=get_status_update_text(report.category, "resolved"),
+                        text=_build_citizen_status_message(report, "resolved"),
                     )
                 except Exception:
                     pass  # portal feed is non-critical
@@ -308,11 +338,10 @@ class DismissReportView(_BaseStatusActionView):
             if report.raw_post_id:
                 try:
                     from apps.mock_fb.models import MockComment
-                    from apps.response.templates_config import get_status_update_text
                     MockComment.objects.create(
                         raw_post_id=report.raw_post_id,
                         author="Lipa City LGU Official",
-                        text=get_status_update_text(report.category, "dismissed"),
+                        text=_build_citizen_status_message(report, "dismissed"),
                     )
                 except Exception:
                     pass  # portal feed is non-critical
