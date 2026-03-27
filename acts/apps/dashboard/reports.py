@@ -274,11 +274,11 @@ class ResolveReportView(_BaseStatusActionView):
             if report.raw_post_id:
                 try:
                     from apps.mock_fb.models import MockComment
-                    from apps.response.templates_config import get_reply_text
+                    from apps.response.templates_config import get_status_update_text
                     MockComment.objects.create(
                         raw_post_id=report.raw_post_id,
                         author="Lipa City LGU Official",
-                        text=get_reply_text(report.category),
+                        text=get_status_update_text(report.category, "resolved"),
                     )
                 except Exception:
                     pass  # portal feed is non-critical
@@ -306,15 +306,16 @@ class DismissReportView(_BaseStatusActionView):
             messages.error(request, str(exc))
         else:
             if report.raw_post_id:
-                from apps.mock_fb.models import MockComment
-                MockComment.objects.create(
-                    raw_post_id=report.raw_post_id,
-                    author="Lipa City LGU Official",
-                    text=(
-                        "Hello. We have reviewed your post, but it does not fall under "
-                        "civic concerns or is a duplicate. No further action will be taken."
-                    ),
-                )
+                try:
+                    from apps.mock_fb.models import MockComment
+                    from apps.response.templates_config import get_status_update_text
+                    MockComment.objects.create(
+                        raw_post_id=report.raw_post_id,
+                        author="Lipa City LGU Official",
+                        text=get_status_update_text(report.category, "dismissed"),
+                    )
+                except Exception:
+                    pass  # portal feed is non-critical
             messages.success(request, "Report dismissed.")
         return redirect('dashboard:report_detail', pk=pk)
 

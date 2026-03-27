@@ -13,7 +13,11 @@ from apps.webhook.models import RawPost
 from apps.triage.models import Report
 from apps.response.models import AutoReply
 from apps.response.sender import send_reply
-from apps.response.templates_config import get_reply_text, REPLY_TEMPLATES
+from apps.response.templates_config import (
+    get_reply_text,
+    get_status_update_text,
+    REPLY_TEMPLATES,
+)
 
 
 def _make_report(category='disaster_flooding', suffix='000'):
@@ -74,6 +78,14 @@ class ReplyTemplatesTests(TestCase):
     def test_other_template_returns_text(self):
         text = get_reply_text('other')
         self.assertIn('Salamat', text)
+
+    def test_status_update_text_for_resolved_uses_category_template(self):
+        resolved = get_status_update_text('disaster_flooding', 'resolved')
+        self.assertEqual(resolved, get_reply_text('disaster_flooding'))
+
+    def test_status_update_text_for_dismissed_returns_decline_message(self):
+        dismissed = get_status_update_text('other', 'dismissed')
+        self.assertIn('duplicate', dismissed)
 
 
 # ---------------------------------------------------------------------------

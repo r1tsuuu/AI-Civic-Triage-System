@@ -349,6 +349,7 @@
 
     const postId = localStorage.getItem("acts_post_id");
     let lastCommentId = localStorage.getItem("acts_last_comment_id") || null;
+    let hasRenderedInitialComment = false;
     let messengerOpen = false;
 
     function toggleMessenger() {
@@ -406,15 +407,22 @@
             const res = await fetch("/fb/api/latest-comment/?post_id=" + encodeURIComponent(postId));
             if (!res.ok) return;
             const data = await res.json();
-            if (data.comment && data.comment.id !== lastCommentId) {
-                lastCommentId = data.comment.id;
-                localStorage.setItem("acts_last_comment_id", lastCommentId);
-                renderComment(data.comment);
-                showBadge();
-                // Auto-open popup when reply first arrives
-                if (!messengerOpen) {
-                    messengerOpen = true;
-                    document.getElementById("msng-popup").style.display = "flex";
+            if (data.comment) {
+                const isNew = data.comment.id !== lastCommentId;
+                const shouldRender = isNew || !hasRenderedInitialComment;
+                if (shouldRender) {
+                    renderComment(data.comment);
+                    hasRenderedInitialComment = true;
+                }
+                if (isNew) {
+                    lastCommentId = data.comment.id;
+                    localStorage.setItem("acts_last_comment_id", lastCommentId);
+                    showBadge();
+                    // Auto-open popup when reply first arrives
+                    if (!messengerOpen) {
+                        messengerOpen = true;
+                        document.getElementById("msng-popup").style.display = "flex";
+                    }
                 }
             }
         } catch (e) {

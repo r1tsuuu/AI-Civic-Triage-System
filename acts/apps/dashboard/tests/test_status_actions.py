@@ -18,6 +18,8 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.mock_fb.models import MockComment
+from apps.response.templates_config import get_status_update_text
 from apps.webhook.models import RawPost
 from apps.triage.models import Report, StatusChange
 
@@ -138,6 +140,16 @@ class DismissTests(TestCase):
         report.refresh_from_db()
         self.assertEqual(report.status, 'dismissed')
 
+    def test_dismiss_creates_mock_comment_from_template(self):
+        report = _make_report('reported', '013')
+        self.client.post(reverse('dashboard:dismiss', kwargs={'pk': report.pk}))
+        comment = MockComment.objects.filter(raw_post=report.raw_post).order_by('-created_at').first()
+        self.assertIsNotNone(comment)
+        self.assertEqual(
+            comment.text,
+            get_status_update_text(report.category, "dismissed"),
+        )
+
 
 class InvalidTransitionTests(TestCase):
     """Forbidden transitions produce an error message and don't change the status."""
@@ -238,3 +250,13 @@ class SuccessMessageTests(TestCase):
         self.assertEqual(response.status_code, 302)
         report.refresh_from_db()
         self.assertEqual(report.status, 'resolved')
+
+    def test_resolve_creates_mock_comment_from_template(self, _mock_sender):
+        report = _make_report('in_progress', '042')
+        self.client.post(reverse('dashboard:resolve', kwargs={'pk': report.pk}))
+        comment = MockComment.objects.filter(raw_post=report.raw_post).order_by('-created_at').first()
+        self.assertIsNotNone(comment)
+        self.assertEqual(
+            comment.text,
+            get_status_update_text(report.category, "resolved"),
+        )

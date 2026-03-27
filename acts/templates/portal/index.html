@@ -118,8 +118,8 @@
             font-size: 15px;
             font-weight: 600;
             border-radius: 999px;
-            padding: 10px 14px;
-            min-height: 44px;
+            padding: 8px 12px;
+            min-height: 38px;
             display: inline-flex;
             align-items: center;
         }
@@ -146,13 +146,27 @@
             border: 1px solid var(--contour-gray);
             border-radius: 12px;
             box-shadow: var(--shadow);
-            padding: 8px;
+            padding: 6px;
             backdrop-filter: blur(5px);
+        }
+
+        .controls-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .controls-label {
+            font-size: 13px;
+            color: #475569;
+            font-weight: 600;
         }
 
         .pills-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             overflow-x: auto;
             white-space: nowrap;
             scrollbar-width: thin;
@@ -166,9 +180,9 @@
             background: #fcfbf8;
             color: #273449;
             border-radius: 999px;
-            padding: 9px 14px;
-            min-height: 44px;
-            font-size: 15px;
+            padding: 7px 11px;
+            min-height: 36px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
         }
@@ -180,7 +194,7 @@
         }
 
         .toggle-row {
-            margin-top: 8px;
+            margin-top: 6px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -193,17 +207,17 @@
             background: #fcfbf8;
             color: #273449;
             border-radius: 8px;
-            padding: 8px 10px;
-            min-height: 44px;
-            font-size: 15px;
+            padding: 6px 9px;
+            min-height: 34px;
+            font-size: 13px;
             font-weight: 600;
             cursor: pointer;
         }
 
         .inline-note {
-            font-size: 15px;
+            font-size: 13px;
             color: #334155;
-            min-height: 24px;
+            min-height: 20px;
         }
 
         .category-wrap {
@@ -214,11 +228,11 @@
         .category-wrap.open { display: block; }
 
         .legend {
-            margin-top: 8px;
+            margin-top: 6px;
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
-            font-size: 15px;
+            font-size: 13px;
             color: #475569;
         }
 
@@ -229,10 +243,21 @@
         }
 
         .dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
             display: inline-block;
+        }
+
+        .filter-strip.collapsed .pills-row,
+        .filter-strip.collapsed .toggle-row,
+        .filter-strip.collapsed .category-wrap,
+        .filter-strip.collapsed .legend {
+            display: none;
+        }
+
+        .filter-strip.collapsed .controls-head {
+            margin-bottom: 0;
         }
 
         .dot.flood { background: var(--alert-vermillion); }
@@ -342,8 +367,8 @@
         .leaflet-control-attribution { font-size: 12px; }
 
         .report-pin {
-            width: 32px;
-            height: 32px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -351,8 +376,8 @@
         }
 
         .report-pin .inner {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 50%;
             border: 2px solid #fff;
             box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
@@ -369,27 +394,26 @@
             background: var(--field-ink);
             border: 2px solid #fff;
             color: #fff;
-            width: 38px;
-            height: 38px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 14px;
+            font-size: 12px;
             box-shadow: 0 4px 12px rgba(28,36,56,0.25);
         }
 
         @media (max-width: 900px) {
-            .quick-links a { padding: 10px 12px; }
-            .quick-links .ghost { display: none; }
+            .quick-links a { padding: 7px 10px; font-size: 13px; }
         }
 
         @media (max-width: 768px) {
             .ui-shell { padding: 8px; gap: 8px; }
             .brand-title { font-size: 15px; }
-            .brand-sub { font-size: 15px; }
-            .context-line { font-size: 15px; }
+            .brand-sub { font-size: 14px; }
+            .context-line { font-size: 14px; }
 
             .report-panel {
                 left: 8px;
@@ -417,7 +441,7 @@
                 </div>
             </div>
             <div class="quick-links">
-                <a href="/fb/" class="ghost">Report an Issue</a>
+                <a href="/fb/" class="ghost">Open Mock FB</a>
                 <a href="/gate/" class="primary">LGU Login</a>
             </div>
         </div>
@@ -425,6 +449,12 @@
     </section>
 
     <section class="filter-strip" aria-label="Filter controls">
+        <div class="controls-head">
+            <span class="controls-label">Map controls</span>
+            <button class="toggle-btn" id="toggle-controls" type="button" aria-expanded="true">
+                Focus map
+            </button>
+        </div>
         <div class="pills-row" id="barangay-pills"></div>
         <div class="toggle-row">
             <button class="toggle-btn" id="toggle-categories" type="button" aria-expanded="false">
@@ -523,7 +553,7 @@ const clusterLayer = L.markerClusterGroup({
         return L.divIcon({
             html: '<div class="cluster-chip">' + cluster.getChildCount() + '</div>',
             className: 'cluster-wrap',
-            iconSize: [38, 38]
+            iconSize: [32, 32]
         });
     }
 });
@@ -551,8 +581,8 @@ function markerIcon(feature) {
     return L.divIcon({
         className: '',
         html: '<span class="report-pin ' + catClass + resolved + '"><span class="inner"></span></span>',
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
     });
 }
 
@@ -710,11 +740,20 @@ function loadStats() {
 
 const categoryWrap = document.getElementById('category-wrap');
 const categoryToggle = document.getElementById('toggle-categories');
+const controlsToggle = document.getElementById('toggle-controls');
+const filterStrip = document.querySelector('.filter-strip');
 categoryToggle.addEventListener('click', () => {
     categoryWrap.classList.toggle('open');
     const open = categoryWrap.classList.contains('open');
     categoryToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
     categoryToggle.textContent = open ? 'Hide category filter' : 'Show category filter';
+});
+
+controlsToggle.addEventListener('click', () => {
+    filterStrip.classList.toggle('collapsed');
+    const expanded = !filterStrip.classList.contains('collapsed');
+    controlsToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    controlsToggle.textContent = expanded ? 'Focus map' : 'Show controls';
 });
 
 loadStats();

@@ -129,12 +129,11 @@
                                     aria-expanded="false">
                                 <i class="bi bi-code-slash"></i>
                             </button>
-                            <button class="btn btn-sm aq-review-btn"
-                                    style="background:var(--datum-blue);color:white;border-radius:2px;"
-                                    onclick="openDrawer('{% url 'dashboard:report_detail' report.id %}')"
-                                    type="button">
+                            <a class="btn btn-sm aq-review-btn"
+                               style="background:var(--datum-blue);color:white;border-radius:2px;"
+                               href="{% url 'dashboard:report_detail' report.id %}">
                                 Review
-                            </button>
+                            </a>
                         </div>
                     </div>
 
@@ -205,17 +204,6 @@
     <!-- ── Right panel: map + detail drawer ───────────────────── -->
     <div class="split-map">
         <div id="queue-map"></div>
-
-        <!-- Detail drawer (slides in over the map) -->
-        <div id="detail-drawer" class="detail-drawer">
-            <div class="drawer-close-bar">
-                <span>Report Detail</span>
-                <button class="drawer-close-btn" onclick="closeDrawer()" title="Close">×</button>
-            </div>
-            <div class="drawer-content" id="drawer-content">
-                <!-- loaded via JS -->
-            </div>
-        </div>
 
         <!-- Category pin legend -->
         <div class="map-pin-legend">
@@ -312,54 +300,5 @@ fetch('/api/public/geojson/')
     })
     .catch(() => {});
 
-// ── Detail drawer ───────────────────────────────────────────────
-const drawer = document.getElementById('detail-drawer');
-const drawerContent = document.getElementById('drawer-content');
-
-async function openDrawer(url) {
-    drawerContent.innerHTML = '<div style="padding:40px;text-align:center;color:#8C9BAB;font-size:13px;">Loading…</div>';
-    drawer.classList.add('open');
-
-    try {
-        const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const main = doc.querySelector('main');
-        if (main) {
-            // Add "open full page" button at top
-            const fullLink = document.createElement('div');
-            fullLink.style.cssText = 'margin-bottom:12px;';
-            fullLink.innerHTML = `<a href="${url}" style="font-size:12px;color:#8C9BAB;text-decoration:none;font-family:'IBM Plex Mono',monospace;">
-                Open full page →</a>`;
-            drawerContent.innerHTML = '';
-            drawerContent.appendChild(fullLink);
-
-            const contentDiv = document.createElement('div');
-            contentDiv.innerHTML = main.innerHTML;
-            drawerContent.appendChild(contentDiv);
-
-            // Re-run any inline scripts in the loaded content
-            contentDiv.querySelectorAll('script').forEach(oldScript => {
-                const newScript = document.createElement('script');
-                newScript.textContent = oldScript.textContent;
-                document.body.appendChild(newScript);
-            });
-        } else {
-            drawerContent.innerHTML = '<p style="padding:20px;color:#C8382A;font-size:13px;">Could not load report detail.</p>';
-        }
-    } catch (e) {
-        drawerContent.innerHTML = `<p style="padding:20px;color:#C8382A;font-size:13px;">Error: ${e.message}</p>`;
-    }
-}
-
-function closeDrawer() {
-    drawer.classList.remove('open');
-}
-
-// Close drawer on Escape key
-document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeDrawer();
-});
 </script>
 {% endblock %}
