@@ -392,7 +392,7 @@ class OverrideReportView(View):
             label = ', '.join(changes_made)
             messages.success(
                 request,
-                f"✓ Report updated: {label} corrected. Marked as ground-truth.",
+                f"Report updated: {label} corrected and marked as ground-truth.",
                 extra_tags='mock-resolve',
             )
         else:

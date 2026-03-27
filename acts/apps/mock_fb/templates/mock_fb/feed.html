@@ -221,13 +221,13 @@
             </div>
         </div>
         <div class="page-meta">
-            📍 City Hall, Lipa City, Batangas &nbsp;·&nbsp; 🏛️ Local Government Unit
+            City Hall, Lipa City, Batangas &nbsp;·&nbsp; Local Government Unit
         </div>
     </div>
 
     {% if just_posted %}
     <div class="posted-alert" id="posted-alert">
-        ✅ Your report was submitted successfully.
+        Report submitted. The LGU will review it shortly.
         <button onclick="document.getElementById('posted-alert').remove()"
                 style="margin-left:auto;background:none;border:none;cursor:pointer;font-size:18px;color:#1a3c1c;">×</button>
     </div>
@@ -250,7 +250,7 @@
             </div>
             <div class="compose-footer">
                 <small class="text-muted me-auto" style="font-size:12px;">
-                    💡 Try: "Tulong, lampas tao na baha sa Sabang!" or "Sira ang kalsada sa Marawoy"
+                    Try: "Tulong, lampas tao na baha sa Sabang!" or "Sira ang kalsada sa Marawoy"
                 </small>
                 <button type="submit" class="btn-fb-post">Post</button>
             </div>
@@ -294,8 +294,7 @@
         {% endfor %}
     {% else %}
         <div class="empty-feed">
-            <div style="font-size:48px;">📭</div>
-            <p class="mt-2">No posts yet. Be the first to report an issue above!</p>
+            <p class="mt-2">No posts yet. Use the form above to report a civic issue.</p>
         </div>
     {% endif %}
 
@@ -323,7 +322,7 @@
         <button onclick="toggleMessenger()" style="margin-left:auto;background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;">&times;</button>
     </div>
     <div id="msng-body">
-        <p id="msng-placeholder">No replies yet. The LGU will respond to your report shortly.</p>
+        <p id="msng-placeholder">No reply yet. Check back after the LGU reviews your report.</p>
     </div>
 </div>
 

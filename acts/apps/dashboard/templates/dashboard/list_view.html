@@ -125,9 +125,9 @@
             <div class="aq-right">
                 {# Time elapsed — red if stale (unassigned > 4h) #}
                 <span class="aq-time{% if report.is_stale %} aq-time--stale{% endif %}"
-                      title="{% if report.is_stale %}⚠ Unassigned for over 4 hours{% endif %}">
+                      title="{% if report.is_stale %}Unassigned for over 4 hours{% endif %}">
                     <i class="bi bi-clock{% if report.is_stale %}-fill{% endif %}"></i>
-                    {{ report.time_elapsed }}{% if report.is_stale %} ⚠{% endif %}
+                    {{ report.time_elapsed }}{% if report.is_stale %} !{% endif %}
                 </span>
 
                 {# Urgency score — dominant number #}

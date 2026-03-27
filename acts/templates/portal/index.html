@@ -394,9 +394,9 @@
 
 <!-- Hero -->
 <section class="hero">
-    <div class="hero-badge">🛰 Live Civic Intelligence</div>
-    <h1>Monitoring <span>Lipa City's</span> Pulse.</h1>
-    <p>Real-time civic issues reported by residents — categorized, tracked, and resolved by the LGU. Your city. Your data.</p>
+    <div class="hero-badge">Live Civic Data</div>
+    <h1>Every issue in <span>Lipa City</span>, tracked.</h1>
+    <p>Residents report. ACTS classifies and routes. The LGU acts. All of it is visible here, in real time.</p>
 
     <!-- Search bar -->
     <div class="search-wrap">
@@ -443,7 +443,7 @@
     <div class="card-panel">
         <div class="card-header">
             <div>
-                <div class="card-title">📍 Civic Issues Map — Lipa City</div>
+                <div class="card-title">Civic Issues Map — Lipa City</div>
                 <div class="card-subtitle" id="map-subtitle">Loading reports…</div>
             </div>
             <button id="clear-search-btn" onclick="clearSearch()"
@@ -479,14 +479,14 @@
 
         <!-- What is ACTS -->
         <div class="info-card">
-            <h3>🤖 Powered by ACTS</h3>
-            <p>The AI Civic Triage System automatically classifies, prioritizes, and routes civic reports to the right LGU department — so nothing gets lost.</p>
+            <h3>Powered by ACTS</h3>
+            <p>ACTS classifies, prioritizes, and routes each report to the right department. Reports don't fall through the cracks.</p>
         </div>
 
         <!-- How to report -->
         <div class="card-panel">
             <div class="card-header">
-                <div class="card-title">📢 How to Report an Issue</div>
+                <div class="card-title">How to Report</div>
             </div>
             <div style="padding:12px 20px 16px;font-size:13px;color:var(--acts-muted);line-height:1.7;">
                 <p style="margin:0 0 8px;">Post on the <strong>Lipa City LGU Facebook page</strong> or use the link below. Your report is automatically processed and sent to the right department.</p>
@@ -583,7 +583,7 @@ function buildMarkers(features) {
               '<span style="display:inline-block;background:' + statusBadgeColor + ';color:white;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600;">' +
               escHtml(p.status_label) + '</span>' +
             '</div>' +
-            '<div style="font-size:12px;color:#64748b;margin-top:4px;">📍 ' + escHtml(p.barangay) + '</div>' +
+            '<div style="font-size:12px;color:#64748b;margin-top:4px;">' + escHtml(p.barangay) + '</div>' +
             '</div>',
             { maxWidth: 220 }
         );
@@ -746,7 +746,7 @@ function loadRecent() {
                         '<span class="rc-cat-badge" style="background:' + catBg + '">' + escHtml(r.category_label) + '</span>' +
                         '<span class="rc-status ' + statusClass + '">' + escHtml(r.status_label) + '</span>' +
                     '</div>' +
-                    '<div class="rc-location">📍 ' + escHtml(r.barangay) + '</div>' +
+                    '<div class="rc-location">' + escHtml(r.barangay) + '</div>' +
                     '<div class="rc-meta">' +
                         '<span class="rc-urgency ' + escHtml(r.urgency_tier) + '">' + escHtml(r.urgency_label) + '</span>' +
                         '<span>' + timeAgo(r.created_at_iso) + '</span>' +

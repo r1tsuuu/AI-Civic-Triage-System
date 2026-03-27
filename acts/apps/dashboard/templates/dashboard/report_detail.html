@@ -12,7 +12,7 @@
 
     {% if report.status == 'for_review' %}
     <div class="alert alert-warning border-warning d-flex align-items-start gap-3 mb-4" role="alert">
-        <span style="font-size:1.4rem;">⚠️</span>
+        <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
         <div>
             <strong>Human Review Required</strong> — The AI classifier returned a confidence of
             <strong>{{ report.confidence_pct|floatformat:0 }}%</strong>, below the
@@ -30,7 +30,7 @@
         </div>
         <div class="col-md-4 text-end">
             <span class="badge" id="status-badge">
-                {% if report.current_status == 'for_review' %}⚠ FOR REVIEW{% else %}{{ report.current_status|upper }}{% endif %}
+                {% if report.current_status == 'for_review' %}FOR REVIEW{% else %}{{ report.current_status|upper }}{% endif %}
             </span>
         </div>
     </div>
