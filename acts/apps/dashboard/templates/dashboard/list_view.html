@@ -8,11 +8,67 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" />
 <style>
     .split-layout.split-layout--map-focus {
-        grid-template-columns: 0 1fr;
+        grid-template-columns: 1fr;
     }
 
     .split-layout.split-layout--map-focus .split-queue {
         display: none;
+    }
+
+    .split-layout.split-layout--map-focus .split-map {
+        width: 100%;
+    }
+
+    .queue-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .queue-toolbar-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .queue-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .queue-filters-toggle {
+        border: 1px solid #D6D1C4;
+        background: #fff;
+        color: #334155;
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .queue-filters-toggle:hover {
+        border-color: #0E4C8B;
+        color: #0E4C8B;
+    }
+
+    .queue-search-row {
+        display: grid;
+        grid-template-columns: 160px minmax(0, 1fr) auto auto;
+        gap: 6px;
+    }
+
+    .advanced-filters {
+        display: none;
+        border-top: 1px solid #E2E8F0;
+        padding-top: 8px;
+    }
+
+    .advanced-filters.open {
+        display: block;
     }
 
     .map-status-chip {
@@ -31,7 +87,7 @@
 
     .map-focus-toggle {
         position: absolute;
-        top: 10px;
+        top: 52px;
         left: 10px;
         z-index: 420;
         border: 1px solid #D6D1C4;
@@ -87,6 +143,18 @@
     .unresolved-box li:last-child {
         border-bottom: none;
     }
+
+    @media (max-width: 1200px) {
+        .queue-search-row {
+            grid-template-columns: 1fr 1fr auto auto;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .queue-search-row {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -99,46 +167,22 @@
         <!-- Filter token header -->
         <div class="split-queue-header">
             <form method="get" id="filter-form">
-                <!-- Category tokens -->
-                <div class="filter-tokens mb-2">
-                    <a href="{% url 'dashboard:report_list' %}?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if barangay_filter %}barangay={{ barangay_filter|urlencode }}&{% endif %}{% if message_filter %}q={{ message_filter|urlencode }}&{% endif %}"
-                       class="filter-token {% if not category_filter %}active{% endif %}">All</a>
-                    <a href="?category=disaster_flooding{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if category_filter == 'disaster_flooding' %}active{% endif %}"
-                       style="{% if category_filter == 'disaster_flooding' %}{% else %}border-color:#C8382A;color:#C8382A;{% endif %}">
-                        Flooding
-                    </a>
-                    <a href="?category=transportation_traffic{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if category_filter == 'transportation_traffic' %}active{% endif %}"
-                       style="{% if category_filter == 'transportation_traffic' %}{% else %}border-color:#C47D1E;color:#C47D1E;{% endif %}">
-                        Traffic
-                    </a>
-                    <a href="?category=public_infrastructure{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if category_filter == 'public_infrastructure' %}active{% endif %}"
-                       style="{% if category_filter == 'public_infrastructure' %}{% else %}border-color:#0E4C8B;color:#0E4C8B;{% endif %}">
-                        Infrastructure
-                    </a>
-                    <a href="?category=public_safety{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if category_filter == 'public_safety' %}active{% endif %}"
-                       style="{% if category_filter == 'public_safety' %}{% else %}border-color:#5C3B7E;color:#5C3B7E;{% endif %}">
-                        Safety
-                    </a>
-                </div>
+                <div class="queue-toolbar">
+                    <div class="queue-toolbar-top">
+                        <span class="queue-count-strip">{{ page_obj.paginator.count }} report{{ page_obj.paginator.count|pluralize }}</span>
+                        <div class="queue-actions">
+                            <button type="button"
+                                    id="queue-filters-toggle"
+                                    class="queue-filters-toggle"
+                                    aria-expanded="{% if category_filter or status_filter %}true{% else %}false{% endif %}">
+                                {% if category_filter or status_filter %}Hide filters{% else %}Show filters{% endif %}
+                            </button>
+                            <a href="{% url 'dashboard:report_list' %}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                        </div>
+                    </div>
 
-                <!-- Status tokens -->
-                <div class="filter-tokens">
-                    <span class="queue-count-strip me-2">{{ page_obj.paginator.count }} report{{ page_obj.paginator.count|pluralize }}</span>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=reported{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if status_filter == 'reported' %}active{% endif %}">Pending</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=for_review{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if status_filter == 'for_review' %}active{% endif %}">For Review</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=in_progress{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if status_filter == 'in_progress' %}active{% endif %}">In Progress</a>
-                    <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=resolved{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
-                       class="filter-token {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
-                </div>
-                <div class="filter-tokens mt-2">
-                    <select name="barangay" class="form-select form-select-sm" style="max-width: 170px;">
+                    <div class="queue-search-row">
+                        <select name="barangay" class="form-select form-select-sm">
                         <option value="">All barangays</option>
                         {% for b in barangay_options %}
                             <option value="{{ b }}" {% if b == barangay_filter %}selected{% endif %}>{{ b }}</option>
@@ -148,7 +192,6 @@
                         type="text"
                         name="q"
                         class="form-control form-control-sm"
-                        style="max-width: 220px;"
                         placeholder="Search report message…"
                         value="{{ message_filter }}"
                     >
@@ -156,6 +199,36 @@
                     {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
                     <button type="submit" class="btn btn-sm btn-outline-primary">Apply</button>
                     <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}{% if status_filter %}status={{ status_filter }}{% endif %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                    </div>
+
+                    <div id="advanced-filters" class="advanced-filters {% if category_filter or status_filter %}open{% endif %}">
+                        <div class="filter-tokens mb-2">
+                            <a href="{% url 'dashboard:report_list' %}?{% if status_filter %}status={{ status_filter }}&{% endif %}{% if barangay_filter %}barangay={{ barangay_filter|urlencode }}&{% endif %}{% if message_filter %}q={{ message_filter|urlencode }}&{% endif %}"
+                               class="filter-token {% if not category_filter %}active{% endif %}">All</a>
+                            <a href="?category=disaster_flooding{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if category_filter == 'disaster_flooding' %}active{% endif %}"
+                               style="{% if category_filter == 'disaster_flooding' %}{% else %}border-color:#C8382A;color:#C8382A;{% endif %}">Flooding</a>
+                            <a href="?category=transportation_traffic{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if category_filter == 'transportation_traffic' %}active{% endif %}"
+                               style="{% if category_filter == 'transportation_traffic' %}{% else %}border-color:#C47D1E;color:#C47D1E;{% endif %}">Traffic</a>
+                            <a href="?category=public_infrastructure{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if category_filter == 'public_infrastructure' %}active{% endif %}"
+                               style="{% if category_filter == 'public_infrastructure' %}{% else %}border-color:#0E4C8B;color:#0E4C8B;{% endif %}">Infrastructure</a>
+                            <a href="?category=public_safety{% if status_filter %}&status={{ status_filter }}{% endif %}{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if category_filter == 'public_safety' %}active{% endif %}"
+                               style="{% if category_filter == 'public_safety' %}{% else %}border-color:#5C3B7E;color:#5C3B7E;{% endif %}">Safety</a>
+                        </div>
+                        <div class="filter-tokens">
+                            <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=reported{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if status_filter == 'reported' %}active{% endif %}">Pending</a>
+                            <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=for_review{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if status_filter == 'for_review' %}active{% endif %}">For Review</a>
+                            <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=in_progress{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if status_filter == 'in_progress' %}active{% endif %}">In Progress</a>
+                            <a href="?{% if category_filter %}category={{ category_filter }}&{% endif %}status=resolved{% if barangay_filter %}&barangay={{ barangay_filter|urlencode }}{% endif %}{% if message_filter %}&q={{ message_filter|urlencode }}{% endif %}"
+                               class="filter-token {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -164,7 +237,6 @@
         <div class="split-queue-body">
             {% if reports %}
                 {% for report in reports %}
-                {% with rid=report.id|stringformat:"s"|slice:":8" %}
                 <article class="aq-card
                     {% if report.urgency_score >= 7.5 %} aq-card--emergency
                     {% elif report.urgency_score >= 5.0 %} aq-card--high-urgency
@@ -229,13 +301,6 @@
                         </div>
 
                         <div class="d-flex align-items-center gap-1">
-                            <button class="btn btn-sm btn-outline-secondary aq-tech-btn"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#tech-{{ rid }}"
-                                    aria-expanded="false">
-                                <i class="bi bi-code-slash"></i>
-                            </button>
                             <a class="btn btn-sm aq-review-btn"
                                style="background:var(--datum-blue);color:white;border-radius:2px;"
                                href="{% url 'dashboard:report_detail' report.id %}">
@@ -243,33 +308,7 @@
                             </a>
                         </div>
                     </div>
-
-                    <!-- Technical breakdown -->
-                    <div class="collapse" id="tech-{{ rid }}">
-                        <div class="aq-tech">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <p class="aq-tech-label">AI Confidence</p>
-                                    <span class="conf-badge conf-{{ report.confidence_tier }}">{{ report.confidence_pct|floatformat:0 }}%</span>
-                                </div>
-                                <div class="col-6">
-                                    <p class="aq-tech-label">Coordinates</p>
-                                    {% if report.latitude %}
-                                        <code class="x-small mono">{{ report.latitude|floatformat:4 }}, {{ report.longitude|floatformat:4 }}</code>
-                                    {% else %}
-                                        <span class="text-muted x-small">—</span>
-                                    {% endif %}
-                                </div>
-                                <div class="col-12">
-                                    <p class="aq-tech-label">Report ID</p>
-                                    <code class="x-small mono">{{ report.id }}</code>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                 </article>
-                {% endwith %}
                 {% endfor %}
 
                 <!-- Pagination -->
@@ -400,12 +439,31 @@ qMap.addLayer(clusterGroup);
 
 const reportsLayout = document.getElementById('reports-layout');
 const mapFocusToggle = document.getElementById('map-focus-toggle');
+const queueFiltersToggle = document.getElementById('queue-filters-toggle');
+const advancedFilters = document.getElementById('advanced-filters');
+
+function setMapFocus(isFocused) {
+    reportsLayout.classList.toggle('split-layout--map-focus', isFocused);
+    mapFocusToggle.setAttribute('aria-expanded', isFocused ? 'false' : 'true');
+    mapFocusToggle.textContent = isFocused ? 'Show reports' : 'Focus map';
+    localStorage.setItem('acts_reports_map_focus', isFocused ? '1' : '0');
+    setTimeout(() => qMap.invalidateSize(), 140);
+}
+
+const savedFocus = localStorage.getItem('acts_reports_map_focus') === '1';
+if (savedFocus) {
+    setMapFocus(true);
+}
+
 mapFocusToggle.addEventListener('click', () => {
-    reportsLayout.classList.toggle('split-layout--map-focus');
-    const listVisible = !reportsLayout.classList.contains('split-layout--map-focus');
-    mapFocusToggle.setAttribute('aria-expanded', listVisible ? 'true' : 'false');
-    mapFocusToggle.textContent = listVisible ? 'Focus map' : 'Show reports';
-    setTimeout(() => qMap.invalidateSize(), 130);
+    const focused = !reportsLayout.classList.contains('split-layout--map-focus');
+    setMapFocus(focused);
+});
+
+queueFiltersToggle.addEventListener('click', () => {
+    const open = advancedFilters.classList.toggle('open');
+    queueFiltersToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    queueFiltersToggle.textContent = open ? 'Hide filters' : 'Show filters';
 });
 
 fetch(DATA_URL)
