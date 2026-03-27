@@ -217,18 +217,20 @@
                 <div class="card-body">
                     <div class="progress-stepper">
                         {% for status in all_statuses %}
-                            <div class="stepper-step {% if status == report.current_status %}active{% elif report.current_status == 'resolved' or all_statuses.forloop.counter <= all_statuses|length %}completed{% endif %}">
+                        {% with step_idx=forloop.counter0 %}
+                            <div class="stepper-step {% if step_idx == current_status_index %}active{% elif step_idx < current_status_index %}completed{% endif %}">
                                 <div class="stepper-circle">
-                                    {% if status == report.current_status %}
-                                        <i class="bi bi-circle-fill"></i>
-                                    {% elif all_statuses|slice:":forloop.counter"|join:" " %}
+                                    {% if step_idx < current_status_index %}
                                         <i class="bi bi-check-circle-fill"></i>
+                                    {% elif step_idx == current_status_index %}
+                                        <i class="bi bi-circle-fill"></i>
                                     {% else %}
                                         <i class="bi bi-circle"></i>
                                     {% endif %}
                                 </div>
                                 <div class="stepper-label">{{ status|upper }}</div>
                             </div>
+                        {% endwith %}
                         {% endfor %}
                     </div>
                 </div>
@@ -346,11 +348,25 @@
                     </p>
                 </div>
             </div>
+            {% elif "META_PAGE_ACCESS_TOKEN" in auto_reply_record.error_message %}
+            <div class="card border-secondary border-opacity-25">
+                <div class="card-header bg-secondary bg-opacity-10 d-flex align-items-center gap-2 py-2">
+                    <i class="bi bi-robot text-secondary fs-5"></i>
+                    <strong class="text-secondary">Simulated — Demo Mode</strong>
+                    <span class="badge bg-secondary ms-auto fw-normal">No live token</span>
+                </div>
+                <div class="card-body py-3">
+                    <p class="mb-1 fst-italic text-secondary">"{{ auto_reply_record.reply_text }}"</p>
+                    <small class="text-muted">
+                        Set <code>META_PAGE_ACCESS_TOKEN</code> in <code>.env</code> to enable real Facebook replies.
+                    </small>
+                </div>
+            </div>
             {% else %}
             <div class="card border-danger border-opacity-50">
                 <div class="card-header bg-danger bg-opacity-10 d-flex align-items-center gap-2 py-2">
                     <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-                    <strong class="text-danger">⚠ Reply Failed</strong>
+                    <strong class="text-danger">Reply Failed</strong>
                 </div>
                 <div class="card-body py-3">
                     <p class="mb-0 text-danger small">
@@ -406,6 +422,10 @@
                                             {% if auto_reply_record.graph_api_success %}
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-check-circle-fill me-1"></i>AutoReply sent
+                                                </span>
+                                            {% elif "META_PAGE_ACCESS_TOKEN" in auto_reply_record.error_message %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-robot me-1"></i>Simulated (demo)
                                                 </span>
                                             {% else %}
                                                 <span class="badge bg-danger">

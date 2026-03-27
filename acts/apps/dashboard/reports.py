@@ -168,7 +168,12 @@ class ReportDetailView(DetailView):
         context['auto_reply_record'] = report.auto_replies.first()
 
         context['available_next_statuses'] = Report.VALID_TRANSITIONS.get(report.status, [])
-        context['all_statuses'] = ['reported', 'acknowledged', 'in_progress', 'resolved']
+        all_statuses = ['reported', 'acknowledged', 'in_progress', 'resolved']
+        context['all_statuses'] = all_statuses
+        context['current_status_index'] = (
+            all_statuses.index(report.status)
+            if report.status in all_statuses else -1
+        )
         context['category_options'] = ALL_CATEGORIES
         context['corrections'] = report.corrections.all().order_by('-corrected_at')
         from apps.triage.scorer import compute_score_with_breakdown
@@ -265,18 +270,15 @@ class ResolveReportView(_BaseStatusActionView):
         except InvalidTransitionError as exc:
             messages.error(request, str(exc))
         else:
-            # Create MockComment for the public portal feed
+            # Create MockComment for the public portal feed (use same Taglish text as AutoReply)
             if report.raw_post_id:
                 try:
                     from apps.mock_fb.models import MockComment
+                    from apps.response.templates_config import get_reply_text
                     MockComment.objects.create(
                         raw_post_id=report.raw_post_id,
                         author="Lipa City LGU Official",
-                        text=(
-                            "Hello! This is the LGU Automated System. "
-                            "Our team has addressed this issue. "
-                            "Thank you for reporting!"
-                        ),
+                        text=get_reply_text(report.category),
                     )
                 except Exception:
                     pass  # portal feed is non-critical
