@@ -1,5 +1,6 @@
 import uuid
 import logging
+import threading
 
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -9,6 +10,14 @@ from django.utils import timezone
 from apps.webhook.models import RawPost
 
 logger = logging.getLogger(__name__)
+
+
+def _run_pipeline(raw_post):
+    try:
+        from apps.triage.pipeline import process_post
+        process_post(raw_post)
+    except Exception:
+        logger.exception("Pipeline failed for mock post %s", raw_post.id)
 
 
 class MockFBFeedView(View):
@@ -42,12 +51,8 @@ class MockFBFeedView(View):
             post_text=text,
         )
 
-        # Run pipeline synchronously — no background thread for demo
-        try:
-            from apps.triage.pipeline import process_post
-            process_post(raw_post)
-        except Exception:
-            logger.exception("Pipeline failed for mock post %s", raw_post.id)
+        # Run pipeline in a background thread so the response returns immediately
+        threading.Thread(target=_run_pipeline, args=(raw_post,), daemon=True).start()
 
         return redirect(f"/fb/?posted=1&post_id={raw_post.id}")
 
